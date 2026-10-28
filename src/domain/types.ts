@@ -13,6 +13,8 @@ export interface PlayerEntity {
   number: number;
   /** Optional short role label, e.g. "VY". */
   label: string;
+  /** The real squad member this player represents (home team only). */
+  personId?: string;
 }
 
 export interface BallEntity {

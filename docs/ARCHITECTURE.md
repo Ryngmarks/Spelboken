@@ -76,3 +76,17 @@ Uppspelning interpolerar positioner från steg *i* till *i+1*. Stegets pilar ton
 
 Backend, inloggning, föreningsstruktur, video, AI, delning via länk. Gränssnittet `ScenarioStore`
 är platsen där en serverlagring kopplas in senare.
+
+## Under arbete: Supabase och trupp (2026-10-28, se D9–D11 och TASKS T6–T8)
+
+- **Trupp (klar, lokalt):** `src/domain/roster.ts` – `Person` (namn, nummer, positioner). En spelare i eget
+  lag kan ha `personId`. Namn hålls utanför scenariodatan; de slås upp i truppen vid visning.
+- **Supabase (förberett):** schema och RLS i `supabase/migrations/0001_initial.sql`.
+
+```
+auth.users ──< team_members >── teams ──< people      (people.user_id → framtida spelarkonto)
+                (coach|player)        └──< scenarios   (data = scenario-JSON)
+```
+
+- Allt läses och skrivs via `ScenarioStore` och `RosterStore` i `src/storage`. När T7 genomförs blir de
+  asynkrona och får en Supabase-implementation. Avsnittet "Översikt" ovan beskriver läget innan T7.

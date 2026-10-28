@@ -748,6 +748,63 @@ textarea {
   border-color: #f87171;
 }
 
+/* ---------- Squad ---------- */
+
+.topbar__heading {
+  font-size: 1.15rem;
+}
+.squad__body {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px 16px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.squad__intro {
+  margin: 0;
+}
+.squad__add h2 {
+  font-size: 0.95rem;
+  margin-bottom: var(--space);
+}
+.squad__add .btn--primary {
+  margin-top: var(--space);
+}
+.squad__row {
+  display: flex;
+  gap: 10px;
+}
+.squad__name {
+  flex: 1;
+}
+.squad__number {
+  width: 70px;
+}
+.squad__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.squad__person .btn {
+  margin-top: 10px;
+}
+.filters__person {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.player__label--name {
+  font-size: 1.35px;
+}
+.panel__note {
+  margin-bottom: var(--space);
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 900px) {

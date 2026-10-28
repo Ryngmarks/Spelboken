@@ -56,3 +56,28 @@ Beslut som är svåra att ändra lyfts fortfarande till produktägaren.
 - **Beslut:** Videokoppling i fas 3 bygger på Veo-delningslänkar med starttid och uppladdade MP4-klipp.
 - **Status 2026-10-29:** Parkerad av produktägaren. Veo kontaktas inte nu; idén och underlaget sparas
   för framtiden. Veos statistik (Analytics 2) tas troligen fram automatiskt med AI, men kan inte exporteras.
+
+## D9 – 2026-10-28 – Supabase som backend, inloggning med e-postlänk (beslut av produktägaren)
+
+- **Beslut:** Supabase (Postgres + Auth) ersätter localStorage som lagring. Tränaren loggar in med
+  e-postlänk (magic link). Lokala scenarier erbjuds en engångsflytt till kontot; därefter är Supabase
+  enda lagringen. Export/import av fil finns kvar.
+- **Motivering:** Gratisnivå, inbyggd auth och radnivåsäkerhet (RLS), ingen egen server att drifta.
+  Förbereder spelarkonton: samma auth, ny roll.
+- **Förutsättningar:** Projekt i EU-region (Stockholm). Gratisprojekt pausas efter en veckas inaktivitet.
+- **Beroende:** `@supabase/supabase-js` (officiell klient; alternativet är att skriva REST-anrop själva).
+- **Ändringsbarhet:** Medel. All åtkomst går via store-gränssnitten i `src/storage`.
+
+## D10 – 2026-10-28 – Trupp: spelare på planen kopplas till riktiga personer
+
+- **Beslut:** Ett lag har en trupp (`Person`: namn, tröjnummer, positioner). En spelare på planen kan
+  kopplas till en person via `personId`. Bara eget lag kopplas, motståndare är anonyma.
+- **Persondata (minimering):** Bara namn, nummer och positioner. Ingen e-post, födelsedata eller bild
+  förrän spelarkonton byggs. Exporterade scenariofiler innehåller `personId` men aldrig namn.
+- **Förberett för spelarkonton:** `team_members` (användare ↔ lag med roll `coach`/`player`) och
+  `people.user_id` finns i schemat från början, men bara rollen `coach` används nu.
+
+## D11 – 2026-10-28 – Publikt GitHub-repo (beslut av produktägaren)
+
+- **Beslut:** Koden ligger i ett publikt repo. Inga hemligheter i koden: Supabase-URL och den publika
+  nyckeln läses från `.env.local` (ignoreras av git). Säkerheten ligger i RLS-reglerna, inte i nyckeln.

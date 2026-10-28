@@ -1,4 +1,5 @@
-import { PHASES, type Drawing, type Entity, type Frame, type Point, type Scenario } from '../domain/types';
+import { PHASES, type Drawing, type Entity, type Frame, type PlayerEntity, type Point, type Scenario } from '../domain/types';
+import type { Person } from '../domain/roster';
 
 /** Narrow runtime checks for data from localStorage or imported files. Returns null when invalid. */
 
@@ -22,7 +23,9 @@ function entity(v: unknown): Entity | null {
   if (!isObj(v) || !isStr(v.id)) return null;
   if (v.kind === 'ball') return { id: v.id, kind: 'ball' };
   if (v.kind === 'player' && (v.team === 'home' || v.team === 'away') && isNum(v.number)) {
-    return { id: v.id, kind: 'player', team: v.team, number: v.number, label: isStr(v.label) ? v.label : '' };
+    const player: PlayerEntity = { id: v.id, kind: 'player', team: v.team, number: v.number, label: isStr(v.label) ? v.label : '' };
+    if (isStr(v.personId) && v.team === 'home') player.personId = v.personId;
+    return player;
   }
   return null;
 }
@@ -78,4 +81,11 @@ export function parseScenario(v: unknown): Scenario | null {
     createdAt: isStr(v.createdAt) ? v.createdAt : now,
     updatedAt: isStr(v.updatedAt) ? v.updatedAt : now,
   };
+}
+
+export function parsePerson(v: unknown): Person | null {
+  if (!isObj(v) || !isStr(v.id) || !isStr(v.name) || !v.name.trim()) return null;
+  const number = isNum(v.number) && Number.isInteger(v.number) && v.number >= 1 && v.number <= 99 ? v.number : null;
+  const positions = Array.isArray(v.positions) ? v.positions.filter(isStr) : [];
+  return { id: v.id, name: v.name.trim(), number, positions };
 }

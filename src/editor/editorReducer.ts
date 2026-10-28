@@ -1,3 +1,4 @@
+import { linkPerson, type Person } from '../domain/roster';
 import {
   addDrawing,
   addPlayer,
@@ -40,6 +41,7 @@ export type EditorAction =
   | { type: 'addBall'; at: Point }
   | { type: 'applyFormation'; team: Team; formation: string }
   | { type: 'updatePlayer'; id: string; patch: Partial<Pick<PlayerEntity, 'number' | 'label' | 'team'>> }
+  | { type: 'linkPerson'; id: string; person: Person | null }
   | { type: 'removeSelected' }
   | { type: 'addDrawing'; drawing: Drawing }
   | { type: 'insertFrame' }
@@ -128,6 +130,8 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return commit(state, applyFormation(scenario, action.team, action.formation), { selection: null });
     case 'updatePlayer':
       return commit(state, updatePlayer(scenario, action.id, action.patch), {}, `player:${action.id}`);
+    case 'linkPerson':
+      return commit(state, linkPerson(scenario, action.id, action.person));
     case 'removeSelected': {
       const sel = state.selection;
       if (!sel) return state;

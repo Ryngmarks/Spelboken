@@ -33,6 +33,8 @@ export interface PitchViewProps {
   onPointerUp?: (e: PointerEvent<SVGSVGElement>) => void;
   onPointerCancel?: (e: PointerEvent<SVGSVGElement>) => void;
   label?: string;
+  /** Names of linked squad members by entity id; shown instead of the role label. */
+  names?: Record<string, string>;
   /** Portrait rotates the pitch so the home team attacks upwards. Ignored for interactive use. */
   orientation?: 'landscape' | 'portrait';
 }
@@ -92,6 +94,7 @@ export function PitchView(props: PitchViewProps) {
               selected={selection?.kind === 'entity' && selection.id === e.id}
               onPointerDown={props.onEntityPointerDown}
               upright={portrait}
+              name={props.names?.[e.id]}
             />
           );
         })}
@@ -270,6 +273,7 @@ function EntityShape({
   selected,
   onPointerDown,
   upright,
+  name,
 }: {
   entity: Entity;
   at: Point;
@@ -277,6 +281,7 @@ function EntityShape({
   onPointerDown?: (id: string, e: PointerEvent<SVGGElement>) => void;
   /** Counter-rotates the entity in portrait mode so numbers stay readable. */
   upright: boolean;
+  name?: string;
 }) {
   const handle = onPointerDown ? (e: PointerEvent<SVGGElement>) => onPointerDown(entity.id, e) : undefined;
   const transform = `translate(${at.x} ${at.y})${upright ? ' rotate(90)' : ''}`;
@@ -300,9 +305,9 @@ function EntityShape({
       <text className="player__number" dy="0.05em">
         {entity.number}
       </text>
-      {entity.label && (
-        <text className="player__label" y={PLAYER_RADIUS + 1.7}>
-          {entity.label}
+      {(name || entity.label) && (
+        <text className={`player__label ${name ? 'player__label--name' : ''}`} y={PLAYER_RADIUS + 1.7}>
+          {name || entity.label}
         </text>
       )}
     </g>

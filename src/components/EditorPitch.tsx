@@ -17,7 +17,15 @@ type Gesture = { pointerId: number } & (
 
 const ARROW_TOOLS: readonly string[] = ['run', 'pass', 'dribble', 'press'];
 
-export function EditorPitch({ state, dispatch }: { state: EditorState; dispatch: Dispatch<EditorAction> }) {
+export function EditorPitch({
+  state,
+  dispatch,
+  names,
+}: {
+  state: EditorState;
+  dispatch: Dispatch<EditorAction>;
+  names: Record<string, string>;
+}) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const { scenario, frameIndex, tool, selection } = state;
@@ -176,6 +184,7 @@ export function EditorPitch({ state, dispatch }: { state: EditorState; dispatch:
       positions={frame.positions}
       drawings={frame.drawings}
       selection={selection}
+      names={names}
       overlay={overlay}
       onBackgroundPointerDown={onBackgroundPointerDown}
       onEntityPointerDown={onEntityPointerDown}

@@ -126,7 +126,13 @@ export function updatePlayer(
 ): Scenario {
   return {
     ...s,
-    entities: s.entities.map((e) => (e.id === id && e.kind === 'player' ? { ...e, ...patch } : e)),
+    entities: s.entities.map((e) => {
+      if (e.id !== id || e.kind !== 'player') return e;
+      const next = { ...e, ...patch };
+      // Only the home team represents real squad members.
+      if (next.team === 'away') delete next.personId;
+      return next;
+    }),
   };
 }
 

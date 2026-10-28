@@ -2,6 +2,9 @@ import { useCallback, useMemo, useState } from 'react';
 import { createScenario, duplicateScenario } from './domain/scenario';
 import { sampleBuildUp } from './domain/samples';
 import type { Scenario } from './domain/types';
+import { unlinkPerson, type Person } from './domain/roster';
+import { createLocalRosterStore } from './storage/rosterStore';
+import { Squad } from './components/Squad';
 import { createLocalStore, exportScenarios, findConflicts, parseImport, resolveImport } from './storage/scenarioStore';
 import { Editor } from './components/Editor';
 import { Library } from './components/Library';
@@ -9,15 +12,18 @@ import { Player } from './components/Player';
 
 type View =
   | { name: 'library' }
+  | { name: 'squad' }
   | { name: 'editor'; id: string }
   | { name: 'player'; id: string; from: 'library' | 'editor' };
 
 const store = createLocalStore();
+const rosterStore = createLocalRosterStore();
 
 export function App() {
   const [scenarios, setScenarios] = useState<Scenario[]>(() => store.list());
   const [view, setView] = useState<View>({ name: 'library' });
   const [message, setMessage] = useState<string | null>(null);
+  const [roster, setRoster] = useState<Person[]>(() => rosterStore.list());
 
   const refresh = useCallback(() => setScenarios(store.list()), []);
 
@@ -83,7 +89,7 @@ export function App() {
     [scenarios],
   );
 
-  const current = view.name === 'library' ? undefined : scenarios.find((s) => s.id === view.id);
+  const current = view.name === 'editor' || view.name === 'player' ? scenarios.find((s) => s.id === view.id) : undefined;
 
   if (view.name === 'editor' && current) {
     return (
@@ -96,6 +102,30 @@ export function App() {
         // The editor saves before calling this.
         onPresent={(s) => setView({ name: 'player', id: s.id, from: 'editor' })}
         onExport={(s) => exportFile([s])}
+        roster={roster}
+      />
+    );
+  }
+
+  if (view.name === 'squad') {
+    return (
+      <Squad
+        roster={roster}
+        onClose={() => setView({ name: 'library' })}
+        onSave={(p) => {
+          tryStore(() => rosterStore.save(p));
+          setRoster(rosterStore.list());
+        }}
+        onRemove={(p) => {
+          tryStore(() => {
+            for (const s of store.list()) {
+              const unlinked = unlinkPerson(s, p.id);
+              if (unlinked !== s) store.save(unlinked);
+            }
+            rosterStore.remove(p.id);
+          });
+          setRoster(rosterStore.list());
+        }}
       />
     );
   }
@@ -104,6 +134,7 @@ export function App() {
     return (
       <Player
         scenario={current}
+        roster={roster}
         closeLabel={view.from === 'editor' ? 'Tillbaka till redigering' : 'Spelboken'}
         onClose={() => setView(view.from === 'editor' ? { name: 'editor', id: current.id } : { name: 'library' })}
       />
@@ -113,6 +144,8 @@ export function App() {
   return (
     <Library
       scenarios={scenarios}
+      roster={roster}
+      onOpenSquad={() => setView({ name: 'squad' })}
       message={message}
       onCreate={() => create(createScenario({ homeFormation: '4-3-3', awayFormation: '4-4-2' }))}
       onCreateSample={() => create(sampleBuildUp())}

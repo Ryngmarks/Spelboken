@@ -1,9 +1,12 @@
 import { useMemo, useRef, useState } from 'react';
+import { isRelevantFor, pitchNames, type Person } from '../domain/roster';
 import { PHASES, POSITIONS, type Phase, type Scenario } from '../domain/types';
 import { PitchView } from './PitchView';
 
 interface LibraryProps {
   scenarios: Scenario[];
+  roster: Person[];
+  onOpenSquad: () => void;
   onCreate: () => void;
   onCreateSample: () => void;
   onOpen: (s: Scenario) => void;
@@ -20,17 +23,20 @@ export function Library(props: LibraryProps) {
   const [position, setPosition] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase | null>(null);
   const [query, setQuery] = useState('');
+  const [personId, setPersonId] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
+  const person = props.roster.find((p) => p.id === personId);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return scenarios.filter(
       (s) =>
+        (!person || isRelevantFor(s, person)) &&
         (!position || s.focusPositions.includes(position)) &&
         (!phase || s.phase === phase) &&
         (!q || `${s.title} ${s.principle} ${s.description}`.toLowerCase().includes(q)),
     );
-  }, [scenarios, position, phase, query]);
+  }, [scenarios, person, position, phase, query]);
 
   const groups = PHASES.map((p) => ({
     phase: p,
@@ -51,6 +57,9 @@ export function Library(props: LibraryProps) {
           </div>
         </div>
         <div className="library__actions">
+          <button className="btn btn--ghost" onClick={props.onOpenSquad}>
+            Trupp{props.roster.length ? ` (${props.roster.length})` : ''}
+          </button>
           <button className="btn btn--ghost" onClick={() => fileInput.current?.click()}>
             Importera
           </button>
@@ -90,6 +99,21 @@ export function Library(props: LibraryProps) {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Sök"
           />
+          {props.roster.length > 0 && (
+            <label className="chips">
+              <span className="filters__label">Visa för spelare</span>
+              <select className="filters__person" value={personId} onChange={(e) => setPersonId(e.target.value)}>
+                <option value="">Alla spelare</option>
+                {props.roster.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.number ? `${p.number}. ` : ''}
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              {person && <span className="muted">Scenarier där {person.name} är med eller som gäller hens positioner.</span>}
+            </label>
+          )}
           <div className="chips" role="group" aria-label="Min position">
             <span className="filters__label">Min position</span>
             <Chip on={position === null} onClick={() => setPosition(null)}>
@@ -154,12 +178,12 @@ export function Library(props: LibraryProps) {
   );
 }
 
-function ScenarioCard({ scenario: s, onOpen, onPresent, onDuplicate, onDelete, onExport }: { scenario: Scenario } & LibraryProps) {
+function ScenarioCard({ scenario: s, roster, onOpen, onPresent, onDuplicate, onDelete, onExport }: { scenario: Scenario } & LibraryProps) {
   const first = s.frames[0]!;
   return (
     <article className="card">
       <button className="card__preview" onClick={() => onPresent(s)} aria-label={`Spela upp ${s.title}`}>
-        <PitchView entities={s.entities} positions={first.positions} drawings={first.drawings} label={`Förhandsvisning av ${s.title}`} />
+        <PitchView entities={s.entities} positions={first.positions} drawings={first.drawings} names={pitchNames(s, roster)} label={`Förhandsvisning av ${s.title}`} />
         <span className="card__play" aria-hidden>
           ▶
         </span>

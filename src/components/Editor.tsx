@@ -1,4 +1,5 @@
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { linkedPersonIds, pitchNames, type Person } from '../domain/roster';
 import { FORMATION_NAMES } from '../domain/formations';
 import { PITCH_LENGTH, PITCH_WIDTH } from '../domain/pitch';
 import { players } from '../domain/scenario';
@@ -35,12 +36,14 @@ interface EditorProps {
   onClose: () => void;
   onPresent: (s: Scenario) => void;
   onExport: (s: Scenario) => void;
+  roster: Person[];
 }
 
-export function Editor({ initial, principles, onSave, onClose, onPresent, onExport }: EditorProps) {
+export function Editor({ initial, principles, onSave, onClose, onPresent, onExport, roster }: EditorProps) {
   const [state, dispatch] = useReducer(editorReducer, initial, initEditor);
   const { scenario, frameIndex, tool } = state;
   const saver = useAutosave(scenario, onSave);
+  const names = useMemo(() => pitchNames(scenario, roster), [scenario, roster]);
 
   useKeyboardShortcuts(state, dispatch);
 
@@ -114,7 +117,7 @@ export function Editor({ initial, principles, onSave, onClose, onPresent, onExpo
           <p className="hint">{activeHint}</p>
 
           <div className="pitch-wrap">
-            <EditorPitch state={state} dispatch={dispatch} />
+            <EditorPitch state={state} dispatch={dispatch} names={names} />
           </div>
 
           <Timeline state={state} dispatch={dispatch} />
@@ -133,7 +136,10 @@ export function Editor({ initial, principles, onSave, onClose, onPresent, onExpo
         <aside className="panel">
           {state.selection && (
             <section className="panel__section">
-              <h2>{selectedPlayer ? `Spelare ${selectedPlayer.number}` : state.selection.kind === 'drawing' ? 'Markering' : 'Boll'}</h2>
+              <h2>{selectedPlayer ? (names[selectedPlayer.id] ? `${selectedPlayer.number} ${names[selectedPlayer.id]}` : `Spelare ${selectedPlayer.number}`) : state.selection.kind === 'drawing' ? 'Markering' : 'Boll'}</h2>
+              {selectedPlayer && selectedPlayer.team === 'home' && (
+                <PersonPicker player={selectedPlayer} scenario={scenario} roster={roster} dispatch={dispatch} />
+              )}
               {selectedPlayer && <PlayerFields player={selectedPlayer} dispatch={dispatch} />}
               <button className="btn btn--danger" onClick={() => dispatch({ type: 'removeSelected' })}>
                 Ta bort {state.selection.kind === 'drawing' ? 'markering' : selectedPlayer ? 'spelare' : 'boll'}
@@ -267,6 +273,43 @@ function Timeline({ state, dispatch }: { state: EditorState; dispatch: React.Dis
         </button>
       </div>
     </div>
+  );
+}
+
+function PersonPicker({
+  player,
+  scenario,
+  roster,
+  dispatch,
+}: {
+  player: PlayerEntity;
+  scenario: Scenario;
+  roster: Person[];
+  dispatch: React.Dispatch<EditorAction>;
+}) {
+  if (roster.length === 0) {
+    return <p className="muted panel__note">Lägg in truppen under ”Trupp” i biblioteket för att koppla spelare till personer.</p>;
+  }
+  const taken = linkedPersonIds(scenario);
+  return (
+    <label className="field">
+      <span className="field__label">Spelare i truppen</span>
+      <select
+        value={player.personId ?? ''}
+        onChange={(e) =>
+          dispatch({ type: 'linkPerson', id: player.id, person: roster.find((p) => p.id === e.target.value) ?? null })
+        }
+      >
+        <option value="">Ingen koppling</option>
+        {roster.map((p) => (
+          <option key={p.id} value={p.id} disabled={taken.has(p.id) && p.id !== player.personId}>
+            {p.number ? `${p.number}. ` : ''}
+            {p.name}
+            {p.positions.length ? ` (${p.positions.join(', ')})` : ''}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

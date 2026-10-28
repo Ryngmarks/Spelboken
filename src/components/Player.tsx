@@ -1,10 +1,21 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { phaseLabel, type Scenario } from '../domain/types';
 import { PitchView } from './PitchView';
+import { pitchNames, type Person } from '../domain/roster';
 import { usePlayback } from './usePlayback';
 
 /** Player-facing presentation of a scenario: step through, play, read the explanation. */
-export function Player({ scenario, onClose, closeLabel }: { scenario: Scenario; onClose: () => void; closeLabel: string }) {
+export function Player({
+  scenario,
+  roster,
+  onClose,
+  closeLabel,
+}: {
+  scenario: Scenario;
+  roster: Person[];
+  onClose: () => void;
+  closeLabel: string;
+}) {
   const pb = usePlayback(scenario.frames);
   const frame = scenario.frames[pb.index]!;
   const count = scenario.frames.length;
@@ -43,6 +54,7 @@ export function Player({ scenario, onClose, closeLabel }: { scenario: Scenario; 
         <div className={`pitch-wrap pitch-wrap--player ${portrait ? 'pitch-wrap--portrait' : ''}`}>
           <PitchView
             orientation={portrait ? 'portrait' : 'landscape'}
+            names={pitchNames(scenario, roster)}
             entities={scenario.entities}
             positions={pb.positions}
             drawings={frame.drawings}
