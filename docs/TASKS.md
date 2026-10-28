@@ -41,7 +41,7 @@ Arkitekturen bedömdes som väl avvägd för prototypen.
 
 ## Backlog (inte påbörjat)
 
-- Exempelscenarier som visar vad appen kan, för att tränarna ska komma igång.
 - Exportera ett steg eller en animation som bild eller video för WhatsApp/sociala kanaler.
 - Önskat och oönskat beteende i samma scenario.
-- Stående plan (porträttläge) i spelarvyn på mobil.
+- Fler exempelscenarier (press, omställning, fasta situationer).
+- Ångra-funktion eller papperskorg för borttagna scenarier.
