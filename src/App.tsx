@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { createScenario, duplicateScenario } from './domain/scenario';
 import { sampleBuildUp } from './domain/samples';
+import { buildUpSuggestions, SUGGESTION_PRINCIPLE } from './domain/suggestions';
 import type { Scenario } from './domain/types';
 import { unlinkPerson, type Person } from './domain/roster';
 import { createLocalRosterStore } from './storage/rosterStore';
@@ -84,6 +85,18 @@ export function App() {
     }
   };
 
+  /** Adds the generated suggestions that are not already in the library (matched by title). */
+  const addSuggestions = () => {
+    const titles = new Set(scenarios.map((s) => s.title));
+    const fresh = buildUpSuggestions().filter((s) => !titles.has(s.title));
+    if (!fresh.length) {
+      setMessage(`Förslagen finns redan i biblioteket under "${SUGGESTION_PRINCIPLE}".`);
+      return;
+    }
+    if (tryStore(() => fresh.forEach((s) => store.save(s))))
+      setMessage(`Lade till ${fresh.length} förslag under "${SUGGESTION_PRINCIPLE}". Öppna och justera dem efter ert lag.`);
+  };
+
   const principles = useMemo(
     () => [...new Set(scenarios.map((s) => s.principle.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'sv')),
     [scenarios],
@@ -149,6 +162,7 @@ export function App() {
       message={message}
       onCreate={() => create(createScenario({ homeFormation: '4-3-3', awayFormation: '4-4-2' }))}
       onCreateSample={() => create(sampleBuildUp())}
+      onAddSuggestions={addSuggestions}
       onOpen={(s) => setView({ name: 'editor', id: s.id })}
       onPresent={(s) => setView({ name: 'player', id: s.id, from: 'library' })}
       onDuplicate={(s) => tryStore(() => store.save(duplicateScenario(s)))}

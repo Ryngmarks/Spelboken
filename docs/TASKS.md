@@ -54,6 +54,14 @@ Arkitekturen bedömdes som väl avvägd för prototypen.
   I spelarvyn kan tittaren själv slå av och på utan att ändra scenariot.
 - **Acceptans:** enhetstester för geometri, validering och ångra; verifierat liggande och stående i webbläsare.
 
+## T6c – Genererade förslag: uppspel 3+1 mot 4-2-3-1-press ✅
+
+- `src/domain/suggestions.ts`: tre mittbackar i de tre centrala korridorerna, 6:a bakom första presslinjen,
+  ytterbackar högt och brett på mittlinjen. Fem mönster (fri 6:a, mittback bär, ytterback fri, tredje man,
+  till 9:an) × vänster/höger = 10 scenarier med 3 steg, korridorer påslagna.
+- Knappen "Förslag" i biblioteket lägger till de som saknas (jämför på titel).
+- **Acceptans:** tester kontrollerar grundstrukturen, spegling och att inga motståndare står i passningslinjerna.
+
 ## T7 – Supabase: inloggning och lagring (väntar på Supabase-projekt)
 
 - Schema och RLS finns i `supabase/migrations/0001_initial.sql` (lag, medlemmar med roll, trupp, scenarier).

@@ -9,6 +9,7 @@ interface LibraryProps {
   onOpenSquad: () => void;
   onCreate: () => void;
   onCreateSample: () => void;
+  onAddSuggestions: () => void;
   onOpen: (s: Scenario) => void;
   onPresent: (s: Scenario) => void;
   onDuplicate: (s: Scenario) => void;
@@ -50,7 +51,7 @@ export function Library(props: LibraryProps) {
     <div className="library">
       <header className="library__header">
         <div className="brand">
-          <img src="/icon.svg" alt="" width={36} height={36} />
+          <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" width={36} height={36} />
           <div>
             <h1>Spelboken</h1>
             <p className="muted">Lagets spelidé – visuellt, steg för steg.</p>
@@ -59,6 +60,9 @@ export function Library(props: LibraryProps) {
         <div className="library__actions">
           <button className="btn btn--ghost" onClick={props.onOpenSquad}>
             Trupp{props.roster.length ? ` (${props.roster.length})` : ''}
+          </button>
+          <button className="btn btn--ghost" onClick={props.onAddSuggestions} title="Uppspel med 3 backar och en 6:a mot 4-2-3-1-press, på båda kanterna">
+            Förslag
           </button>
           <button className="btn btn--ghost" onClick={() => fileInput.current?.click()}>
             Importera
