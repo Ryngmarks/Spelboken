@@ -54,4 +54,5 @@ Beslut som är svåra att ändra lyfts fortfarande till produktägaren.
 
 - **Underlag:** `docs/research/VEO.md`. Inget publikt API; villkoren förbjuder skrapning.
 - **Beslut:** Videokoppling i fas 3 bygger på Veo-delningslänkar med starttid och uppladdade MP4-klipp.
-- **Öppen fråga till produktägaren:** Ska vi kontakta Veo om deras kommande partner-API?
+- **Status 2026-10-29:** Parkerad av produktägaren. Veo kontaktas inte nu; idén och underlaget sparas
+  för framtiden. Veos statistik (Analytics 2) tas troligen fram automatiskt med AI, men kan inte exporteras.
