@@ -81,3 +81,11 @@ Beslut som är svåra att ändra lyfts fortfarande till produktägaren.
 
 - **Beslut:** Koden ligger i ett publikt repo. Inga hemligheter i koden: Supabase-URL och den publika
   nyckeln läses från `.env.local` (ignoreras av git). Säkerheten ligger i RLS-reglerna, inte i nyckeln.
+
+## D12 – 2026-10-28 – Hosting på GitHub Pages (beslut av produktägaren)
+
+- **Beslut:** Appen publiceras på GitHub Pages via GitHub Actions (`.github/workflows/deploy.yml`) vid
+  varje push till `main`. Testerna måste gå igenom innan något publiceras. Gratis för publika repon.
+- **Konsekvens tills T7:** data ligger i webbläsaren på varje enhet. Det som skapas lokalt
+  (`localhost`) syns inte på den publicerade sidan; flytta med Exportera/Importera.
+- Vite använder relativ `base` så att samma bygge fungerar under `/<repo>/`.

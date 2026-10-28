@@ -67,7 +67,11 @@ Arkitekturen bedömdes som väl avvägd för prototypen.
 
 ## T8 – Publikt GitHub-repo (väntar på inloggning)
 
-- **Kräver av produktägaren:** `gh auth login` i en terminal. Därefter skapar Claude repot och pushar.
+- Publiceras på GitHub Pages via Actions vid push till `main` (D12). Workflow finns.
+- **Kräver av produktägaren:** `gh auth login` i en terminal. Därefter skapar Claude repot, pushar
+  och slår på Pages.
+- När T7 görs: lägg Pages-adressen som redirect-URL i Supabase och Supabase-värdena som
+  repo-variabler i Actions.
 
 ## Senare – Spelarkonton (förberett, inte planerat)
 
