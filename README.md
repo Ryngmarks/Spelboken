@@ -1,5 +1,7 @@
 <img src="assets/icon.svg" width="64" height="64" alt="">
 
+**Live:** https://ryngmarks.github.io/Spelboken/
+
 # Spelboken (Football Playbook)
 
 En digital, visuell spelbok för fotbollstränare och spelare. Prototyp: bygg taktiska scenarier

@@ -65,11 +65,11 @@ Arkitekturen bedömdes som väl avvägd för prototypen.
 - **Kräver av produktägaren:** Supabase-projekt i EU (Stockholm), URL + publik nyckel i `.env.local`,
   redirect-URL `http://localhost:5173` under Authentication → URL Configuration.
 
-## T8 – Publikt GitHub-repo (väntar på inloggning)
+## T8 – Publikt GitHub-repo och publicering ✅
+
+- Repo: https://github.com/Ryngmarks/Spelboken – sida: https://ryngmarks.github.io/Spelboken/
 
 - Publiceras på GitHub Pages via Actions vid push till `main` (D12). Workflow finns.
-- **Kräver av produktägaren:** `gh auth login` i en terminal. Därefter skapar Claude repot, pushar
-  och slår på Pages.
 - När T7 görs: lägg Pages-adressen som redirect-URL i Supabase och Supabase-värdena som
   repo-variabler i Actions.
 
