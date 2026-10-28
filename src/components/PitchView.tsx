@@ -1,6 +1,6 @@
 import type { PointerEvent, ReactNode, Ref } from 'react';
-import { PITCH_LENGTH, PITCH_WIDTH } from '../domain/pitch';
-import type { ArrowDrawing, Drawing, Entity, Point } from '../domain/types';
+import { CORRIDORS, PITCH_LENGTH, PITCH_WIDTH, THIRDS } from '../domain/pitch';
+import type { ArrowDrawing, Drawing, Entity, PitchGuide, Point } from '../domain/types';
 import type { Selection } from '../editor/editorReducer';
 
 export const PLAYER_RADIUS = 1.9;
@@ -37,6 +37,8 @@ export interface PitchViewProps {
   names?: Record<string, string>;
   /** Portrait rotates the pitch so the home team attacks upwards. Ignored for interactive use. */
   orientation?: 'landscape' | 'portrait';
+  /** Reference lines such as corridors and thirds. */
+  guides?: PitchGuide[];
 }
 
 export function PitchView(props: PitchViewProps) {
@@ -69,6 +71,7 @@ export function PitchView(props: PitchViewProps) {
       {/* Portrait maps (x, y) to (y, L - x): own goal at the bottom, attacking upwards. */}
       <g transform={portrait ? `translate(0 ${PITCH_LENGTH}) rotate(-90)` : undefined}>
       <PitchMarkings />
+      {props.guides && props.guides.length > 0 && <PitchGuides guides={props.guides} portrait={portrait} />}
       <g opacity={drawingOpacity}>
         {drawings.map((d) => (
           <DrawingShape
@@ -156,6 +159,44 @@ function PitchMarkings() {
       <path d={`M ${L - 1} 0 A 1 1 0 0 0 ${L} 1`} />
       <path d={`M 0 ${W - 1} A 1 1 0 0 1 1 ${W}`} />
       <path d={`M ${L} ${W - 1} A 1 1 0 0 0 ${L - 1} ${W}`} />
+    </g>
+  );
+}
+
+/** Corridors and thirds as dashed lines with labels. Labels stay upright in portrait mode. */
+function PitchGuides({ guides, portrait }: { guides: PitchGuide[]; portrait: boolean }) {
+  const L = PITCH_LENGTH;
+  const W = PITCH_WIDTH;
+  const upright = portrait ? ' rotate(90)' : '';
+  const corridors = guides.includes('corridors');
+  const thirds = guides.includes('thirds');
+  return (
+    <g className="guides" aria-hidden>
+      {corridors &&
+        CORRIDORS.map((b, i) => (
+          <g key={`c${i}`}>
+            {/* Inner corridors (half-spaces) are tinted so the five lanes are easy to tell apart. */}
+            {(i === 1 || i === 3) && <rect x={0} y={b.from} width={L} height={b.to - b.from} className="guides__tint" />}
+            {i > 0 && <line x1={0} y1={b.from} x2={L} y2={b.from} className="guides__line" />}
+            <text className="guides__label" transform={`translate(${L * 0.75} ${(b.from + b.to) / 2})${upright}`}>
+              {b.label}
+            </text>
+          </g>
+        ))}
+      {thirds &&
+        THIRDS.map((b, i) => (
+          <g key={`t${i}`}>
+            {i > 0 && <line x1={b.from} y1={0} x2={b.from} y2={W} className="guides__line guides__line--thirds" />}
+            {/* Along the far touchline; in portrait that is the right edge, so anchor the text there. */}
+            <text
+              className="guides__label guides__label--thirds"
+              textAnchor={portrait ? 'end' : 'middle'}
+              transform={`translate(${(b.from + b.to) / 2} ${W - 1.4})${upright}`}
+            >
+              {b.label}
+            </text>
+          </g>
+        ))}
     </g>
   );
 }

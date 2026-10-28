@@ -26,6 +26,7 @@ export function createScenario(opts: CreateScenarioOptions = {}): Scenario {
     phase: 'build-up',
     principle: '',
     focusPositions: [],
+    guides: [],
     entities: [{ id: BALL_ID, kind: 'ball' }],
     frames: [{ id: newId(), caption: '', positions: { [BALL_ID]: { ...CENTRE } }, drawings: [] }],
     createdAt: now,
@@ -187,7 +188,7 @@ export function removeDrawing(s: Scenario, frameIndex: number, id: string): Scen
 
 export type ScenarioMeta = Pick<
   Scenario,
-  'title' | 'description' | 'phase' | 'principle' | 'focusPositions'
+  'title' | 'description' | 'phase' | 'principle' | 'focusPositions' | 'guides'
 >;
 
 export function updateMeta(s: Scenario, patch: Partial<ScenarioMeta>): Scenario {

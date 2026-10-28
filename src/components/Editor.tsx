@@ -15,6 +15,7 @@ import {
 import { editorReducer, initEditor, type EditorAction, type EditorState, type Tool } from '../editor/editorReducer';
 import { createAutosaver, type SaveStatus } from '../editor/autosave';
 import { EditorPitch } from './EditorPitch';
+import { GuideToggles } from './GuideToggles';
 
 const AUTOSAVE_MS = 400;
 
@@ -114,7 +115,10 @@ export function Editor({ initial, principles, onSave, onClose, onPresent, onExpo
               </button>
             )}
           </div>
-          <p className="hint">{activeHint}</p>
+          <div className="editor__subbar">
+            <p className="hint">{activeHint}</p>
+            <GuideToggles active={scenario.guides} onToggle={(guide) => dispatch({ type: 'toggleGuide', guide })} />
+          </div>
 
           <div className="pitch-wrap">
             <EditorPitch state={state} dispatch={dispatch} names={names} />

@@ -1,4 +1,4 @@
-import { PHASES, type Drawing, type Entity, type Frame, type PlayerEntity, type Point, type Scenario } from '../domain/types';
+import { PHASES, PITCH_GUIDES, type Drawing, type Entity, type Frame, type PlayerEntity, type Point, type Scenario } from '../domain/types';
 import type { Person } from '../domain/roster';
 
 /** Narrow runtime checks for data from localStorage or imported files. Returns null when invalid. */
@@ -76,6 +76,7 @@ export function parseScenario(v: unknown): Scenario | null {
     phase,
     principle: isStr(v.principle) ? v.principle : '',
     focusPositions: Array.isArray(v.focusPositions) ? v.focusPositions.filter(isStr) : [],
+    guides: PITCH_GUIDES.map((g) => g.id).filter((id) => Array.isArray(v.guides) && v.guides.includes(id)),
     entities: entities as Entity[],
     frames: frames as Frame[],
     createdAt: isStr(v.createdAt) ? v.createdAt : now,

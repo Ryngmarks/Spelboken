@@ -1,5 +1,6 @@
-import { useEffect, useSyncExternalStore } from 'react';
-import { phaseLabel, type Scenario } from '../domain/types';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { phaseLabel, type PitchGuide, type Scenario } from '../domain/types';
+import { GuideToggles } from './GuideToggles';
 import { PitchView } from './PitchView';
 import { pitchNames, type Person } from '../domain/roster';
 import { usePlayback } from './usePlayback';
@@ -20,6 +21,9 @@ export function Player({
   const frame = scenario.frames[pb.index]!;
   const count = scenario.frames.length;
   const portrait = useMediaQuery(PORTRAIT_QUERY);
+  // Starts with what the coach chose; the viewer can toggle for themselves without changing the scenario.
+  const [guides, setGuides] = useState<PitchGuide[]>(scenario.guides);
+  const toggleGuide = (g: PitchGuide) => setGuides((cur) => (cur.includes(g) ? cur.filter((x) => x !== g) : [...cur, g]));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -59,6 +63,7 @@ export function Player({
             positions={pb.positions}
             drawings={frame.drawings}
             drawingOpacity={pb.drawingOpacity}
+            guides={guides}
             label={`${scenario.title}, steg ${pb.index + 1} av ${count}`}
           />
         </div>
@@ -102,6 +107,7 @@ export function Player({
         </section>
 
         <Legend />
+        <GuideToggles active={guides} onToggle={toggleGuide} />
       </main>
     </div>
   );

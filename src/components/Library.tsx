@@ -183,7 +183,7 @@ function ScenarioCard({ scenario: s, roster, onOpen, onPresent, onDuplicate, onD
   return (
     <article className="card">
       <button className="card__preview" onClick={() => onPresent(s)} aria-label={`Spela upp ${s.title}`}>
-        <PitchView entities={s.entities} positions={first.positions} drawings={first.drawings} names={pitchNames(s, roster)} label={`Förhandsvisning av ${s.title}`} />
+        <PitchView entities={s.entities} positions={first.positions} drawings={first.drawings} guides={s.guides} names={pitchNames(s, roster)} label={`Förhandsvisning av ${s.title}`} />
         <span className="card__play" aria-hidden>
           ▶
         </span>

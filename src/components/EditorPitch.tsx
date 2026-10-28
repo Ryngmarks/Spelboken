@@ -185,6 +185,7 @@ export function EditorPitch({
       drawings={frame.drawings}
       selection={selection}
       names={names}
+      guides={scenario.guides}
       overlay={overlay}
       onBackgroundPointerDown={onBackgroundPointerDown}
       onEntityPointerDown={onEntityPointerDown}

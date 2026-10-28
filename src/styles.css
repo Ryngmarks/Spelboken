@@ -854,3 +854,66 @@ textarea {
     transition: none !important;
   }
 }
+
+/* ---------- Pitch guides (corridors, thirds) ---------- */
+
+.guides {
+  pointer-events: none;
+}
+.guides__tint {
+  fill: rgb(255 255 255 / 0.07);
+}
+.guides__line {
+  stroke: rgb(255 255 255 / 0.7);
+  stroke-width: 0.22;
+  stroke-dasharray: 1 0.8;
+}
+.guides__line--thirds {
+  stroke: rgb(253 224 71 / 0.75);
+  stroke-dasharray: 2 1;
+}
+.guides__label {
+  fill: rgb(255 255 255 / 0.75);
+  font-size: 1.4px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  letter-spacing: 0.03em;
+}
+.guides__label--thirds {
+  fill: rgb(253 224 71 / 0.8);
+}
+.editor__subbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.guide-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.player .guide-toggles {
+  margin-top: 12px;
+}
+.guide-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.guide-toggle--on {
+  border-color: var(--accent);
+  background: rgb(200 240 74 / 0.12);
+  color: var(--accent);
+}

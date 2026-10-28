@@ -51,6 +51,14 @@ export interface Frame {
   drawings: Drawing[];
 }
 
+/** Optional reference lines drawn on the pitch. */
+export type PitchGuide = 'corridors' | 'thirds';
+
+export const PITCH_GUIDES: { id: PitchGuide; label: string }[] = [
+  { id: 'corridors', label: 'Korridorer' },
+  { id: 'thirds', label: 'Tredjedelar' },
+];
+
 export type Phase =
   | 'build-up'
   | 'attack'
@@ -67,6 +75,8 @@ export interface Scenario {
   phase: Phase;
   principle: string;
   focusPositions: string[];
+  /** Reference lines shown on the pitch for this scenario. */
+  guides: PitchGuide[];
   entities: Entity[];
   frames: Frame[];
   createdAt: string;

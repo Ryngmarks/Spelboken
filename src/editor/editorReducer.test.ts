@@ -67,6 +67,17 @@ describe('editorReducer', () => {
     expect(s.scenario.frames[0]!.caption).toBe('Hej');
   });
 
+  it('toggles pitch guides as separate undo steps', () => {
+    const s = run(
+      initEditor(createScenario()),
+      { type: 'toggleGuide', guide: 'corridors' },
+      { type: 'toggleGuide', guide: 'thirds' },
+      { type: 'toggleGuide', guide: 'corridors' },
+    );
+    expect(s.scenario.guides).toEqual(['thirds']);
+    expect(run(s, { type: 'undo' }).scenario.guides).toEqual(['corridors', 'thirds']);
+  });
+
   it('clears redo after a new change', () => {
     const s = run(
       initEditor(createScenario()),

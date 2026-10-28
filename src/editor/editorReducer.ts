@@ -15,7 +15,7 @@ import {
   updatePlayer,
   type ScenarioMeta,
 } from '../domain/scenario';
-import type { ArrowType, Drawing, PlayerEntity, Point, Scenario, Team } from '../domain/types';
+import type { ArrowType, Drawing, PitchGuide, PlayerEntity, Point, Scenario, Team } from '../domain/types';
 
 export type Tool = 'select' | ArrowType | 'zone' | 'add-home' | 'add-away';
 
@@ -49,6 +49,7 @@ export type EditorAction =
   | { type: 'moveFrame'; from: number; to: number }
   | { type: 'setCaption'; caption: string }
   | { type: 'updateMeta'; patch: Partial<ScenarioMeta> }
+  | { type: 'toggleGuide'; guide: PitchGuide }
   | { type: 'undo' }
   | { type: 'redo' };
 
@@ -164,6 +165,12 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'updateMeta': {
       const fields = Object.keys(action.patch).sort().join(',');
       return commit(state, updateMeta(scenario, action.patch), {}, `meta:${fields}`);
+    }
+    case 'toggleGuide': {
+      const on = scenario.guides.includes(action.guide);
+      const guides = on ? scenario.guides.filter((g) => g !== action.guide) : [...scenario.guides, action.guide];
+      // Each toggle is its own undo step.
+      return commit(state, updateMeta(scenario, { guides }));
     }
     case 'undo': {
       const previous = state.past.at(-1);

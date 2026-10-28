@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createScenario, insertFrameAfter } from '../domain/scenario';
+import { parseScenario } from './validate';
 import { createLocalStore, exportScenarios, findConflicts, parseImport, resolveImport } from './scenarioStore';
 
 function memoryStorage(): Storage {
@@ -87,5 +88,14 @@ describe('resolveImport', () => {
     expect(kept[1]).toBe(fresh);
 
     expect(resolveImport([local], incoming, true)).toBe(incoming);
+  });
+});
+
+describe('parseScenario guides', () => {
+  it('keeps known guides and defaults older data to none', () => {
+    const s = createScenario();
+    expect(parseScenario({ ...s, guides: ['thirds', 'bogus', 'corridors'] })?.guides).toEqual(['corridors', 'thirds']);
+    const { guides: _, ...old } = s;
+    expect(parseScenario(old)?.guides).toEqual([]);
   });
 });

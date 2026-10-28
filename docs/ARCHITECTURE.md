@@ -45,6 +45,7 @@ Scenario {
   phase: 'build-up' | 'attack' | 'transition-attack' | 'defence' | 'transition-defence' | 'set-piece',
   principle: string,          // fritext, grupperar scenarier inom en fas
   focusPositions: string[],   // t.ex. ['VY', 'VB'] – för spelarens filtrering
+  guides: ('corridors' | 'thirds')[], // hjälplinjer på planen; saknas i äldre data → []
   entities: Entity[],         // spelare (team, nummer, etikett) och boll – gemensamma för alla steg
   frames: Frame[],            // minst ett steg
   createdAt, updatedAt

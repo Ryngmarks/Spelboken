@@ -47,6 +47,13 @@ Arkitekturen bedömdes som väl avvägd för prototypen.
 - Tas en person bort ur truppen försvinner kopplingarna. Exportfiler innehåller aldrig namn.
 - **Acceptans:** verifierat med enhetstester och i webbläsare.
 
+## T6b – Hjälplinjer: korridorer och tredjedelar ✅
+
+- Fem korridorer (ytter, inner, central) längs straffområdets och målområdets kanter, tredjedelar på längden.
+- Slås på/av per scenario i editorn (ångringsbart) och följer med till spelarvy och förhandsvisning.
+  I spelarvyn kan tittaren själv slå av och på utan att ändra scenariot.
+- **Acceptans:** enhetstester för geometri, validering och ångra; verifierat liggande och stående i webbläsare.
+
 ## T7 – Supabase: inloggning och lagring (väntar på Supabase-projekt)
 
 - Schema och RLS finns i `supabase/migrations/0001_initial.sql` (lag, medlemmar med roll, trupp, scenarier).
@@ -74,3 +81,4 @@ Arkitekturen bedömdes som väl avvägd för prototypen.
 - Önskat och oönskat beteende i samma scenario.
 - Fler exempelscenarier (press, omställning, fasta situationer).
 - Ångra-funktion eller papperskorg för borttagna scenarier.
+- Fler hjälplinjer: 18 zoner (Zon 14), halvor, gränser mellan lagdelarna.
