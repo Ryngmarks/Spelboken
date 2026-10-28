@@ -8,10 +8,12 @@ import { ArrowShape, PitchView } from './PitchView';
 const SNAP_DISTANCE = 2.6;
 const MIN_DRAW_LENGTH = 1.5;
 
-type Gesture =
+/** A gesture belongs to the pointer (finger) that started it; other pointers are ignored meanwhile. */
+type Gesture = { pointerId: number } & (
   | { kind: 'move'; id: string; dragId: string; offset: Point }
   | { kind: 'arrow'; type: ArrowType; from: Point; to: Point }
-  | { kind: 'zone'; from: Point; to: Point };
+  | { kind: 'zone'; from: Point; to: Point }
+);
 
 const ARROW_TOOLS: readonly string[] = ['run', 'pass', 'dribble', 'press'];
 
@@ -48,17 +50,18 @@ export function EditorPitch({ state, dispatch }: { state: EditorState; dispatch:
   };
 
   const startArrowOrZone = (from: Point, e: PointerEvent) => {
+    const { pointerId } = e;
     if (ARROW_TOOLS.includes(tool)) {
-      setGesture({ kind: 'arrow', type: tool as ArrowType, from, to: from });
+      setGesture({ pointerId, kind: 'arrow', type: tool as ArrowType, from, to: from });
       capture(e);
     } else if (tool === 'zone') {
-      setGesture({ kind: 'zone', from, to: from });
+      setGesture({ pointerId, kind: 'zone', from, to: from });
       capture(e);
     }
   };
 
   const onBackgroundPointerDown = (e: PointerEvent<SVGSVGElement>) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || gesture) return;
     const p = clampToPitch(toPitch(e));
     if (tool === 'add-home' || tool === 'add-away') {
       dispatch({ type: 'addPlayer', team: tool === 'add-home' ? 'home' : 'away', at: p });
@@ -73,6 +76,10 @@ export function EditorPitch({ state, dispatch }: { state: EditorState; dispatch:
 
   const onEntityPointerDown = (id: string, e: PointerEvent<SVGGElement>) => {
     if (e.button !== 0) return;
+    if (gesture) {
+      e.stopPropagation();
+      return;
+    }
     if (tool !== 'select') {
       // Arrows start from the entity; placement tools ignore clicks on existing entities.
       e.stopPropagation();
@@ -85,18 +92,18 @@ export function EditorPitch({ state, dispatch }: { state: EditorState; dispatch:
     const at = frame.positions[id];
     if (!at) return;
     const p = toPitch(e);
-    setGesture({ kind: 'move', id, dragId: newId(), offset: { x: at.x - p.x, y: at.y - p.y } });
+    setGesture({ pointerId: e.pointerId, kind: 'move', id, dragId: newId(), offset: { x: at.x - p.x, y: at.y - p.y } });
     capture(e);
   };
 
   const onDrawingPointerDown = (id: string, e: PointerEvent<SVGGElement>) => {
-    if (tool !== 'select' || e.button !== 0) return;
+    if (tool !== 'select' || e.button !== 0 || gesture) return;
     e.stopPropagation();
     dispatch({ type: 'select', selection: { kind: 'drawing', id } });
   };
 
   const onPointerMove = (e: PointerEvent<SVGSVGElement>) => {
-    if (!gesture) return;
+    if (!gesture || e.pointerId !== gesture.pointerId) return;
     const p = toPitch(e);
     if (gesture.kind === 'move') {
       dispatch({
@@ -112,8 +119,13 @@ export function EditorPitch({ state, dispatch }: { state: EditorState; dispatch:
     }
   };
 
-  const onPointerUp = () => {
-    if (!gesture) return;
+  /** Cancelled pointer (e.g. the browser took over the touch): keep moves made so far, discard drawings. */
+  const onPointerCancel = (e: PointerEvent<SVGSVGElement>) => {
+    if (gesture && e.pointerId === gesture.pointerId) setGesture(null);
+  };
+
+  const onPointerUp = (e: PointerEvent<SVGSVGElement>) => {
+    if (!gesture || e.pointerId !== gesture.pointerId) return;
     if (gesture.kind === 'arrow' && distance(gesture.from, gesture.to) >= MIN_DRAW_LENGTH) {
       dispatch({
         type: 'addDrawing',
@@ -170,6 +182,7 @@ export function EditorPitch({ state, dispatch }: { state: EditorState; dispatch:
       onDrawingPointerDown={onDrawingPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
       label={`Spelplan, steg ${frameIndex + 1}`}
     />
   );

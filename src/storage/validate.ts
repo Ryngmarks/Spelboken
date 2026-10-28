@@ -8,8 +8,14 @@ const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !
 const isStr = (v: unknown): v is string => typeof v === 'string';
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
+/** Generous bounds around the 105 × 68 pitch; anything outside is corrupt or hostile data. */
+const COORD_MIN = -20;
+const COORD_MAX = 130;
+const isCoord = (v: unknown): v is number => isNum(v) && v >= COORD_MIN && v <= COORD_MAX;
+const isSize = (v: unknown): v is number => isNum(v) && v >= 0 && v <= COORD_MAX - COORD_MIN;
+
 function point(v: unknown): Point | null {
-  return isObj(v) && isNum(v.x) && isNum(v.y) ? { x: v.x, y: v.y } : null;
+  return isObj(v) && isCoord(v.x) && isCoord(v.y) ? { x: v.x, y: v.y } : null;
 }
 
 function entity(v: unknown): Entity | null {
@@ -25,7 +31,7 @@ function drawing(v: unknown): Drawing | null {
   if (!isObj(v) || !isStr(v.id)) return null;
   if (v.type === 'zone') {
     const origin = point(v.origin);
-    if (!origin || !isNum(v.width) || !isNum(v.height)) return null;
+    if (!origin || !isSize(v.width) || !isSize(v.height)) return null;
     return { id: v.id, type: 'zone', origin, width: v.width, height: v.height };
   }
   if (v.type === 'run' || v.type === 'pass' || v.type === 'dribble' || v.type === 'press') {

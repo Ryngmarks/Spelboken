@@ -25,9 +25,19 @@ AGENTS.md, docs/, Vite + React + TS + Vitest.
 - Spelarvy med uppspelning, stegning och text. Mobilanpassad.
 - **Acceptans:** fungerar i en 375 px bred vy.
 
-## T5 – Oberoende granskning (Codex)
+## T5 – Oberoende granskning (Codex) ✅
 
 Granska T2–T4 mot ARCHITECTURE.md och PRODUCT.md. Åtgärda kritiska fynd.
+
+Resultat 2026-10-28: 2 kritiska och 4 bör-fynd, alla åtgärdade med tester:
+- Import frågar vid konflikt (ersätt eller importera som kopia) istället för att skriva över.
+- Koordinater valideras vid import; dribblingspilar har tak för antal segment.
+- Autosparning sparar direkt vid `pagehide`/`visibilitychange` (`src/editor/autosave.ts`).
+- Lagringsfel visas ("Inte sparat!") med möjlighet att exportera.
+- Paus fryser pågående animation (`src/components/playbackReducer.ts`).
+- Pekargester knyts till sitt `pointerId`; `pointercancel` kastar ofullständig ritning.
+
+Arkitekturen bedömdes som väl avvägd för prototypen.
 
 ## Backlog (inte påbörjat)
 

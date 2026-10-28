@@ -1,3 +1,4 @@
+import { duplicateScenario } from '../domain/scenario';
 import type { Scenario } from '../domain/types';
 import { parseScenario } from './validate';
 
@@ -71,4 +72,22 @@ export function parseImport(text: string): ImportResult {
   const scenarios = items.map(parseScenario).filter((s): s is Scenario => s !== null);
   if (scenarios.length === 0) throw new Error('Hittade inga scenarier i filen.');
   return { scenarios, skipped: items.length - scenarios.length };
+}
+
+/** Imported scenarios whose id already exists locally. */
+export function findConflicts(existing: Scenario[], imported: Scenario[]): Scenario[] {
+  const ids = new Set(existing.map((s) => s.id));
+  return imported.filter((s) => ids.has(s.id));
+}
+
+/**
+ * What to write for an import. Conflicting scenarios either replace the local version
+ * or are kept as copies with new ids, so local work is never overwritten without consent.
+ */
+export function resolveImport(existing: Scenario[], imported: Scenario[], replace: boolean): Scenario[] {
+  if (replace) return imported;
+  const ids = new Set(existing.map((s) => s.id));
+  return imported.map((s) =>
+    ids.has(s.id) ? { ...duplicateScenario(s), title: `${s.title} (importerad)` } : s,
+  );
 }

@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { createScenario, duplicateScenario } from './domain/scenario';
 import { sampleBuildUp } from './domain/samples';
 import type { Scenario } from './domain/types';
-import { createLocalStore, exportScenarios, parseImport } from './storage/scenarioStore';
+import { createLocalStore, exportScenarios, findConflicts, parseImport, resolveImport } from './storage/scenarioStore';
 import { Editor } from './components/Editor';
 import { Library } from './components/Library';
 import { Player } from './components/Player';
@@ -29,10 +29,21 @@ export function App() {
     [refresh],
   );
 
+  /** For library actions: report storage errors (e.g. full localStorage) instead of crashing. */
+  const tryStore = (action: () => void): boolean => {
+    try {
+      action();
+      return true;
+    } catch {
+      setMessage('Kunde inte spara – lagringen i webbläsaren är full eller blockerad. Exportera och ta bort gamla scenarier.');
+      return false;
+    } finally {
+      refresh();
+    }
+  };
+
   const create = (s: Scenario) => {
-    store.save(s);
-    refresh();
-    setView({ name: 'editor', id: s.id });
+    if (tryStore(() => store.save(s))) setView({ name: 'editor', id: s.id });
   };
 
   const exportFile = (list: Scenario[]) => {
@@ -48,13 +59,18 @@ export function App() {
   const importFile = async (file: File) => {
     try {
       const { scenarios: imported, skipped } = parseImport(await file.text());
-      const existing = new Set(store.list().map((s) => s.id));
-      const updated = imported.filter((s) => existing.has(s.id)).length;
-      imported.forEach((s) => store.save(s));
-      refresh();
+      const existing = store.list();
+      const conflicts = findConflicts(existing, imported);
+      const replace =
+        conflicts.length > 0 &&
+        confirm(
+          `${conflicts.length} av scenarierna finns redan här (${conflicts.map((s) => `"${s.title}"`).join(', ')}).\n\n` +
+            'OK = ersätt dem med versionen i filen.\nAvbryt = behåll dina och importera filens som kopior.',
+        );
+      if (!tryStore(() => resolveImport(existing, imported, replace).forEach((s) => store.save(s)))) return;
       setMessage(
         `Importerade ${imported.length} scenario${imported.length === 1 ? '' : 'n'}` +
-          (updated ? `, varav ${updated} ersatte befintliga` : '') +
+          (conflicts.length ? (replace ? `, ${conflicts.length} ersatte befintliga` : `, ${conflicts.length} som kopior`) : '') +
           (skipped ? `. ${skipped} kunde inte läsas.` : '.'),
       );
     } catch (e) {
@@ -77,10 +93,9 @@ export function App() {
         principles={principles}
         onSave={save}
         onClose={() => setView({ name: 'library' })}
-        onPresent={(s) => {
-          save(s);
-          setView({ name: 'player', id: s.id, from: 'editor' });
-        }}
+        // The editor saves before calling this.
+        onPresent={(s) => setView({ name: 'player', id: s.id, from: 'editor' })}
+        onExport={(s) => exportFile([s])}
       />
     );
   }
@@ -103,10 +118,7 @@ export function App() {
       onCreateSample={() => create(sampleBuildUp())}
       onOpen={(s) => setView({ name: 'editor', id: s.id })}
       onPresent={(s) => setView({ name: 'player', id: s.id, from: 'library' })}
-      onDuplicate={(s) => {
-        store.save(duplicateScenario(s));
-        refresh();
-      }}
+      onDuplicate={(s) => tryStore(() => store.save(duplicateScenario(s)))}
       onDelete={(s) => {
         store.remove(s.id);
         refresh();

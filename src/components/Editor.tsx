@@ -12,6 +12,7 @@ import {
   type Team,
 } from '../domain/types';
 import { editorReducer, initEditor, type EditorAction, type EditorState, type Tool } from '../editor/editorReducer';
+import { createAutosaver, type SaveStatus } from '../editor/autosave';
 import { EditorPitch } from './EditorPitch';
 
 const AUTOSAVE_MS = 400;
@@ -33,34 +34,19 @@ interface EditorProps {
   onSave: (s: Scenario) => void;
   onClose: () => void;
   onPresent: (s: Scenario) => void;
+  onExport: (s: Scenario) => void;
 }
 
-export function Editor({ initial, principles, onSave, onClose, onPresent }: EditorProps) {
+export function Editor({ initial, principles, onSave, onClose, onPresent, onExport }: EditorProps) {
   const [state, dispatch] = useReducer(editorReducer, initial, initEditor);
   const { scenario, frameIndex, tool } = state;
-  const [saved, setSaved] = useState(true);
-  const latest = useRef(scenario);
-  latest.current = scenario;
-
-  // Autosave, debounced. Flushes on unmount so leaving the editor never loses changes.
-  const first = useRef(true);
-  useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
-    setSaved(false);
-    const t = setTimeout(() => {
-      onSave(scenario);
-      setSaved(true);
-    }, AUTOSAVE_MS);
-    return () => clearTimeout(t);
-  }, [scenario, onSave]);
-  const dirty = useRef(false);
-  dirty.current = !saved;
-  useEffect(() => () => void (dirty.current && onSave(latest.current)), [onSave]);
+  const saver = useAutosave(scenario, onSave);
 
   useKeyboardShortcuts(state, dispatch);
+
+  const leave = (then: () => void) => {
+    if (saver.flush() || confirm('Ändringarna kunde inte sparas. Lämna ändå? Exportera först om du vill behålla dem.')) then();
+  };
 
   const frame = scenario.frames[frameIndex]!;
   const selectedPlayer =
@@ -73,7 +59,7 @@ export function Editor({ initial, principles, onSave, onClose, onPresent }: Edit
   return (
     <div className="editor">
       <header className="topbar">
-        <button className="btn btn--ghost" onClick={onClose} aria-label="Tillbaka till biblioteket">
+        <button className="btn btn--ghost" onClick={() => leave(onClose)} aria-label="Tillbaka till biblioteket">
           ← Spelboken
         </button>
         <input
@@ -82,9 +68,14 @@ export function Editor({ initial, principles, onSave, onClose, onPresent }: Edit
           onChange={(e) => dispatch({ type: 'updateMeta', patch: { title: e.target.value } })}
           aria-label="Scenariots namn"
         />
-        <span className="topbar__status" aria-live="polite">
-          {saved ? 'Sparat' : 'Sparar…'}
+        <span className={`topbar__status topbar__status--${saver.status}`} aria-live="polite">
+          {saver.status === 'saved' ? 'Sparat' : saver.status === 'pending' ? 'Sparar…' : 'Inte sparat!'}
         </span>
+        {saver.status === 'error' && (
+          <button className="btn btn--danger" onClick={() => onExport(scenario)} title="Lagringen i webbläsaren är full eller blockerad">
+            Exportera för att inte förlora
+          </button>
+        )}
         <div className="topbar__actions">
           <button className="btn btn--ghost" onClick={() => dispatch({ type: 'undo' })} disabled={!state.past.length} title="Ångra (Ctrl+Z)">
             Ångra
@@ -92,7 +83,7 @@ export function Editor({ initial, principles, onSave, onClose, onPresent }: Edit
           <button className="btn btn--ghost" onClick={() => dispatch({ type: 'redo' })} disabled={!state.future.length} title="Gör om (Ctrl+Y)">
             Gör om
           </button>
-          <button className="btn btn--primary" onClick={() => onPresent(scenario)}>
+          <button className="btn btn--primary" onClick={() => leave(() => onPresent(scenario))}>
             ▶ Spela upp
           </button>
         </div>
@@ -406,6 +397,36 @@ function ToolIcon({ tool }: { tool: Tool }) {
         </svg>
       );
   }
+}
+
+/**
+ * Debounced autosave. Also saves immediately when the tab is hidden or closed and when the editor
+ * unmounts, so a reload right after an edit does not lose it.
+ */
+function useAutosave(scenario: Scenario, onSave: (s: Scenario) => void) {
+  const [status, setStatus] = useState<SaveStatus>('saved');
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+  const [saver] = useState(() => createAutosaver<Scenario>((s) => onSaveRef.current(s), AUTOSAVE_MS, setStatus));
+
+  const initial = useRef(scenario);
+  useEffect(() => {
+    if (scenario !== initial.current) saver.schedule(scenario);
+  }, [scenario, saver]);
+
+  useEffect(() => {
+    const flush = () => void saver.flush();
+    const onVisibility = () => document.visibilityState === 'hidden' && flush();
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+      flush();
+    };
+  }, [saver]);
+
+  return { status, flush: saver.flush };
 }
 
 function useKeyboardShortcuts(state: EditorState, dispatch: React.Dispatch<EditorAction>) {

@@ -223,6 +223,10 @@ textarea {
   color: var(--muted);
   font-size: 0.85rem;
 }
+.topbar__status--error {
+  color: var(--danger);
+  font-weight: 600;
+}
 .topbar__actions {
   display: flex;
   gap: 6px;

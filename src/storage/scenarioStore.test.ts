@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createScenario, insertFrameAfter } from '../domain/scenario';
-import { createLocalStore, exportScenarios, parseImport } from './scenarioStore';
+import { createLocalStore, exportScenarios, findConflicts, parseImport, resolveImport } from './scenarioStore';
 
 function memoryStorage(): Storage {
   const data = new Map<string, string>();
@@ -59,8 +59,33 @@ describe('import/export', () => {
     expect(parseImport(text).skipped).toBe(1);
   });
 
+  it('skips scenarios with coordinates far outside the pitch', () => {
+    const s = createScenario();
+    const bad = {
+      ...s,
+      frames: [{ ...s.frames[0]!, drawings: [{ id: 'd', type: 'dribble', from: { x: 0, y: 0 }, to: { x: 1e12, y: 0 } }] }],
+    };
+    expect(() => parseImport(JSON.stringify(bad))).toThrow('Hittade inga');
+  });
+
   it('rejects files without scenarios', () => {
     expect(() => parseImport('[]')).toThrow();
     expect(() => parseImport('hej')).toThrow('JSON');
+  });
+});
+
+describe('resolveImport', () => {
+  it('keeps conflicting scenarios as copies unless replacing', () => {
+    const local = createScenario({ title: 'Lokal' });
+    const fresh = createScenario({ title: 'Ny' });
+    const incoming = [{ ...local, title: 'Gammal export' }, fresh];
+    expect(findConflicts([local], incoming).map((s) => s.id)).toEqual([local.id]);
+
+    const kept = resolveImport([local], incoming, false);
+    expect(kept[0]!.id).not.toBe(local.id);
+    expect(kept[0]!.title).toBe('Gammal export (importerad)');
+    expect(kept[1]).toBe(fresh);
+
+    expect(resolveImport([local], incoming, true)).toBe(incoming);
   });
 });

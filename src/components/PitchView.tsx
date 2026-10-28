@@ -31,6 +31,7 @@ export interface PitchViewProps {
   onDrawingPointerDown?: (id: string, e: PointerEvent<SVGGElement>) => void;
   onPointerMove?: (e: PointerEvent<SVGSVGElement>) => void;
   onPointerUp?: (e: PointerEvent<SVGSVGElement>) => void;
+  onPointerCancel?: (e: PointerEvent<SVGSVGElement>) => void;
   label?: string;
   /** Portrait rotates the pitch so the home team attacks upwards. Ignored for interactive use. */
   orientation?: 'landscape' | 'portrait';
@@ -60,7 +61,7 @@ export function PitchView(props: PitchViewProps) {
       onPointerDown={props.onBackgroundPointerDown}
       onPointerMove={props.onPointerMove}
       onPointerUp={props.onPointerUp}
-      onPointerCancel={props.onPointerUp}
+      onPointerCancel={props.onPointerCancel}
     >
       <ArrowMarkers />
       {/* Portrait maps (x, y) to (y, L - x): own goal at the bottom, attacking upwards. */}
@@ -210,7 +211,8 @@ export function arrowPath(type: ArrowDrawing['type'], from: Point, to: Point): s
   if (len < 0.01) return `M ${from.x} ${from.y}`;
   const nx = -dy / len;
   const ny = dx / len;
-  const waves = Math.max(2, Math.round(len / 2.4));
+  // Capped so that bad data can never make rendering expensive.
+  const waves = Math.min(80, Math.max(2, Math.round(len / 2.4)));
   const steps = waves * 8;
   const tail = 2; // straight end so the arrow head points the right way
   let d = `M ${from.x} ${from.y}`;
