@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "start": "npm install --no-audit --no-fund && vite --host --port 5173 --strictPort",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",

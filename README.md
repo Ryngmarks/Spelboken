@@ -8,8 +8,9 @@ i flera steg på en 2D-plan, spela upp dem som animation och dela dem med spelar
 ## Kom igång
 
 ```bash
-npm install
-npm run dev      # utvecklingsserver på http://localhost:5173
+npm start        # installerar beroenden och startar på http://localhost:5173
+                 # (nås även från mobil på samma wifi via adressen som visas under "Network")
+npm run dev      # bara utvecklingsservern, utan installation och utan nätverksåtkomst
 npm test         # enhetstester
 npm run build    # typkontroll + produktionsbygge i dist/
 ```
