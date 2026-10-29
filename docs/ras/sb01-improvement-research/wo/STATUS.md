@@ -5,7 +5,7 @@ Integration branch: `sb01-integration` (main is merged only with the owner's yes
 | WO | Status | Verified by PM | Review |
 |---|---|---|---|
 | 01 | DONE, merged to sb01-integration | diff scope OK, `npm test` 74/74, `npm run build` OK | skipped (S, low risk) |
-| 03 | merged to sb01-integration, in review | scope OK, CSS append conflict resolved (kept both), `npm test` 132/132 on integration, build OK | Codex (author Claude) |
+| 03 | DONE (PASS WITH FIXES), merged | scope OK, CSS append conflict resolved (kept both), `npm test` 132/132 on integration, build OK | Codex: WO-03.review.md. PM fixed finding 1 (nearest arrow; browser check: new code picks the nearer arrow, old code the later one) |
 | 04 | DONE (PASS WITH FIXES), merged to sb01-integration | scope OK; PM fixed M1 (hostile ids, test fails on old code) + m2; `npm test` 104/104 on integration, build OK | Claude Opus: WO-04.review.md |
 | 02 | DONE, merged to sb01-integration | diff scope OK, `npm test` 74/74, build OK; 44 px + no overflow measured by implementer | skipped (UI only, reversible) |
 
@@ -15,3 +15,5 @@ Carried into WO-05/06 from WO-04.review.md: m1 (dribble arrow keeps ball after p
 | 05 | running (prototype) | | |
 
 PM decision inside scope: remaining `PITCH_LENGTH/WIDTH` users (Editor, scenario, formations, …) move to `PitchSpec` with R4 formats, not now.
+
+Carried into WO-06 from WO-03.review.md: finding 2 – at 375 px the 22 px hit circle of a player on the touchline is clipped by the 4 m SVG padding (≈ 12 px); fix in the input surface without changing visible geometry. GATE P will show whether it matters in practice.
