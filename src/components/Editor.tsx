@@ -12,22 +12,31 @@ import {
   type Scenario,
   type Team,
 } from '../domain/types';
+import { POSITION_INFO } from '../domain/positions';
 import { editorReducer, initEditor, type EditorAction, type EditorState, type Tool } from '../editor/editorReducer';
 import { createAutosaver, type SaveStatus } from '../editor/autosave';
 import { EditorPitch } from './EditorPitch';
 import { GuideToggles } from './GuideToggles';
 
 const AUTOSAVE_MS = 400;
+const CUSTOM_LABEL = '__custom';
 
-const TOOLS: { id: Tool; label: string; key: string; hint: string }[] = [
+const OTHER_SHORTCUTS: { keys: string; what: string }[] = [
+  { keys: 'Ctrl+Z', what: 'Ångra' },
+  { keys: 'Ctrl+Y', what: 'Gör om' },
+  { keys: 'Delete', what: 'Ta bort markerad spelare, boll eller markering' },
+  { keys: 'Esc', what: 'Tillbaka till Flytta' },
+];
+
+const TOOLS: { id: Tool; label: string; short?: string; key: string; hint: string }[] = [
   { id: 'select', label: 'Flytta', key: 'v', hint: 'Markera och dra spelare och boll' },
   { id: 'run', label: ARROW_LABELS.run, key: 'r', hint: 'Dra för att rita en löpning' },
   { id: 'pass', label: ARROW_LABELS.pass, key: 'p', hint: 'Dra från spelare till spelare eller yta' },
   { id: 'dribble', label: ARROW_LABELS.dribble, key: 'd', hint: 'Dra för att rita en dribbling' },
   { id: 'press', label: ARROW_LABELS.press, key: 't', hint: 'Dra för att visa pressriktning' },
   { id: 'zone', label: 'Yta', key: 'y', hint: 'Dra en rektangel för att markera en yta' },
-  { id: 'add-home', label: '+ Eget lag', key: 'h', hint: 'Klicka på planen för att placera en spelare' },
-  { id: 'add-away', label: '+ Motståndare', key: 'm', hint: 'Klicka på planen för att placera en motståndare' },
+  { id: 'add-home', label: '+ Eget lag', short: '+ Eget', key: 'h', hint: 'Klicka på planen för att placera en spelare' },
+  { id: 'add-away', label: '+ Motståndare', short: '+ Motst.', key: 'm', hint: 'Klicka på planen för att placera en motståndare' },
 ];
 
 interface EditorProps {
@@ -45,6 +54,12 @@ export function Editor({ initial, principles, onSave, onClose, onPresent, onExpo
   const { scenario, frameIndex, tool } = state;
   const saver = useAutosave(scenario, onSave);
   const names = useMemo(() => pitchNames(scenario, roster), [scenario, roster]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const sheetCloseRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (sheetOpen) sheetCloseRef.current?.focus();
+  }, [sheetOpen]);
 
   useKeyboardShortcuts(state, dispatch);
 
@@ -106,7 +121,7 @@ export function Editor({ initial, principles, onSave, onClose, onPresent, onExpo
                 title={`${t.hint} (${t.key.toUpperCase()})`}
               >
                 <ToolIcon tool={t.id} />
-                <span>{t.label}</span>
+                <span>{t.short ?? t.label}</span>
               </button>
             ))}
             {!hasBall && (
@@ -117,8 +132,43 @@ export function Editor({ initial, principles, onSave, onClose, onPresent, onExpo
           </div>
           <div className="editor__subbar">
             <p className="hint">{activeHint}</p>
-            <GuideToggles active={scenario.guides} onToggle={(guide) => dispatch({ type: 'toggleGuide', guide })} />
+            <div className="editor__subbar-actions">
+              <button
+                className={`btn btn--ghost btn--icon ${helpOpen ? 'btn--on' : ''}`}
+                aria-expanded={helpOpen}
+                aria-controls="shortcut-help"
+                aria-label="Kortkommandon"
+                title="Kortkommandon"
+                onClick={() => setHelpOpen((o) => !o)}
+              >
+                ?
+              </button>
+              <button
+                className={`btn btn--ghost scenario-toggle ${state.selection ? 'scenario-toggle--dot' : ''}`}
+                aria-haspopup="dialog"
+                onClick={() => setSheetOpen(true)}
+              >
+                Scenario
+              </button>
+              <GuideToggles active={scenario.guides} onToggle={(guide) => dispatch({ type: 'toggleGuide', guide })} />
+            </div>
           </div>
+          <section id="shortcut-help" className="shortcut-help" hidden={!helpOpen} aria-label="Kortkommandon">
+            <dl>
+              {TOOLS.map((t) => (
+                <div key={t.id}>
+                  <dt>{t.key.toUpperCase()}</dt>
+                  <dd>{t.label}</dd>
+                </div>
+              ))}
+              {OTHER_SHORTCUTS.map((k) => (
+                <div key={k.keys}>
+                  <dt>{k.keys}</dt>
+                  <dd>{k.what}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
 
           <div className="pitch-wrap">
             <EditorPitch state={state} dispatch={dispatch} names={names} />
@@ -137,14 +187,24 @@ export function Editor({ initial, principles, onSave, onClose, onPresent, onExpo
           </label>
         </div>
 
-        <aside className="panel">
+        {sheetOpen && <div className="sheet-backdrop" onClick={() => setSheetOpen(false)} />}
+        <aside
+          className={`panel ${sheetOpen ? 'panel--open' : ''}`}
+          onKeyDown={(e) => e.key === 'Escape' && setSheetOpen(false)}
+        >
+          <div className="panel__sheet-head">
+            <h2>Scenario</h2>
+            <button ref={sheetCloseRef} className="btn btn--ghost" onClick={() => setSheetOpen(false)}>
+              Stäng
+            </button>
+          </div>
           {state.selection && (
             <section className="panel__section">
               <h2>{selectedPlayer ? (names[selectedPlayer.id] ? `${selectedPlayer.number} ${names[selectedPlayer.id]}` : `Spelare ${selectedPlayer.number}`) : state.selection.kind === 'drawing' ? 'Markering' : 'Boll'}</h2>
               {selectedPlayer && selectedPlayer.team === 'home' && (
                 <PersonPicker player={selectedPlayer} scenario={scenario} roster={roster} dispatch={dispatch} />
               )}
-              {selectedPlayer && <PlayerFields player={selectedPlayer} dispatch={dispatch} />}
+              {selectedPlayer && <PlayerFields key={selectedPlayer.id} player={selectedPlayer} dispatch={dispatch} />}
               <button className="btn btn--danger" onClick={() => dispatch({ type: 'removeSelected' })}>
                 Ta bort {state.selection.kind === 'drawing' ? 'markering' : selectedPlayer ? 'spelare' : 'boll'}
               </button>
@@ -318,41 +378,67 @@ function PersonPicker({
 }
 
 function PlayerFields({ player, dispatch }: { player: PlayerEntity; dispatch: React.Dispatch<EditorAction> }) {
+  const [custom, setCustom] = useState(player.label !== '' && !(POSITIONS as readonly string[]).includes(player.label));
+  const update = (patch: Partial<PlayerEntity>) => dispatch({ type: 'updatePlayer', id: player.id, patch });
   return (
-    <div className="field-row">
-      <label className="field">
-        <span className="field__label">Nummer</span>
-        <input
-          type="number"
-          min={1}
-          max={99}
-          value={player.number}
-          onChange={(e) => {
-            const n = Number(e.target.value);
-            if (Number.isInteger(n) && n >= 1 && n <= 99) dispatch({ type: 'updatePlayer', id: player.id, patch: { number: n } });
-          }}
-        />
-      </label>
-      <label className="field">
-        <span className="field__label">Roll</span>
-        <input
-          maxLength={4}
-          value={player.label}
-          placeholder="VY"
-          onChange={(e) => dispatch({ type: 'updatePlayer', id: player.id, patch: { label: e.target.value.toUpperCase() } })}
-        />
-      </label>
-      <label className="field">
-        <span className="field__label">Lag</span>
+    <>
+      <div className="field-row">
+        <label className="field">
+          <span className="field__label">Nummer</span>
+          <input
+            type="number"
+            min={1}
+            max={99}
+            value={player.number}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isInteger(n) && n >= 1 && n <= 99) update({ number: n });
+            }}
+          />
+        </label>
+        <label className="field">
+          <span className="field__label">Lag</span>
+          <select value={player.team} onChange={(e) => update({ team: e.target.value as Team })}>
+            <option value="home">Eget</option>
+            <option value="away">Motst.</option>
+          </select>
+        </label>
+      </div>
+      <div className="field">
+        <label className="field__label" htmlFor="player-role">
+          Roll
+        </label>
         <select
-          value={player.team}
-          onChange={(e) => dispatch({ type: 'updatePlayer', id: player.id, patch: { team: e.target.value as Team } })}
+          id="player-role"
+          value={custom ? CUSTOM_LABEL : player.label}
+          onChange={(e) => {
+            if (e.target.value === CUSTOM_LABEL) {
+              setCustom(true);
+            } else {
+              setCustom(false);
+              update({ label: e.target.value });
+            }
+          }}
         >
-          <option value="home">Eget</option>
-          <option value="away">Motst.</option>
+          <option value="">Ingen</option>
+          {POSITIONS.map((pos) => (
+            <option key={pos} value={pos}>
+              {pos} – {POSITION_INFO[pos]?.name ?? pos}
+            </option>
+          ))}
+          <option value={CUSTOM_LABEL}>Egen…</option>
         </select>
-      </label>
-    </div>
+        {custom && (
+          <input
+            maxLength={4}
+            value={player.label}
+            placeholder="t.ex. LB"
+            aria-label="Egen roll"
+            onChange={(e) => update({ label: e.target.value.toUpperCase() })}
+          />
+        )}
+      </div>
+    </>
   );
 }
 
