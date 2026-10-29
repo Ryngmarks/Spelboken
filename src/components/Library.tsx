@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { isRelevantFor, pitchNames, type Person } from '../domain/roster';
+import { POSITION_INFO } from '../domain/positions';
 import { PHASES, POSITIONS, type Phase, type Scenario } from '../domain/types';
 import { PitchView } from './PitchView';
+import { PositionHelp } from './Squad';
 
 interface LibraryProps {
   scenarios: Scenario[];
@@ -87,6 +89,8 @@ export function Library(props: LibraryProps) {
         </div>
       </header>
 
+      <PositionHelp />
+
       {props.message && (
         <p className="notice" role="status">
           {props.message}
@@ -124,7 +128,12 @@ export function Library(props: LibraryProps) {
               Alla
             </Chip>
             {POSITIONS.map((p) => (
-              <Chip key={p} on={position === p} onClick={() => setPosition(position === p ? null : p)}>
+              <Chip
+                key={p}
+                on={position === p}
+                onClick={() => setPosition(position === p ? null : p)}
+                title={POSITION_INFO[p]?.name}
+              >
                 {p}
               </Chip>
             ))}
@@ -220,9 +229,15 @@ function ScenarioCard({ scenario: s, roster, onOpen, onPresent, onDuplicate, onD
   );
 }
 
-function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+function Chip({ on, onClick, children, title }: { on: boolean; onClick: () => void; children: React.ReactNode; title?: string }) {
   return (
-    <button className={`chip ${on ? 'chip--on' : ''}`} aria-pressed={on} onClick={onClick}>
+    <button
+      className={`chip ${on ? 'chip--on' : ''}`}
+      aria-pressed={on}
+      onClick={onClick}
+      title={title}
+      aria-label={title ? `${children} – ${title}` : undefined}
+    >
       {children}
     </button>
   );
