@@ -24,3 +24,7 @@ differ.** One section per round, items numbered continuously across rounds. Newe
    coach can insert into a step's task field. Curves (WO-07) decided after the prototype.
 8. **Prototype on the live site: "Ja, på sidan"** – behind `?proto=a` / `?proto=b`, stores nothing, removed when the
    winner is built. PM may push to main to publish the prototype.
+
+## 2026-10-29, round 3 (WO-01–05 done, publish for GATE P)
+9. **Publish everything: "Ja, publicera allt"** – merge `sb01-integration` into `main` and push: the R1 app improvements
+   (WO-01–04) and the prototype (WO-05) go live together.
