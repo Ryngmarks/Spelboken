@@ -1048,4 +1048,14 @@ textarea {
 }
 .timeline__actions .btn {
   min-width: 44px;
+/* Ghost of the previous step: where players and ball stood, faint and never interactive. */
+.ghost {
+  fill: rgb(255 255 255 / 0.3);
+  stroke: rgb(255 255 255 / 0.45);
+  stroke-width: 0.25;
+  stroke-dasharray: 0.6 0.5;
+  pointer-events: none;
+}
+.ghost--ball {
+  fill: rgb(255 255 255 / 0.5);
 }

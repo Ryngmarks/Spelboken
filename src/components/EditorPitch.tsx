@@ -1,11 +1,11 @@
-import { useRef, useState, type Dispatch, type PointerEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type Dispatch, type PointerEvent } from 'react';
 import { newId } from '../domain/scenario';
-import { clampToPitch, distance } from '../domain/pitch';
+import { clampToPitch, DEFAULT_PITCH, distance, type PitchSpec } from '../domain/pitch';
 import type { ArrowType, Point } from '../domain/types';
 import type { EditorAction, EditorState } from '../editor/editorReducer';
-import { ArrowShape, PitchView } from './PitchView';
+import { hitEntity, snapTarget, type PxPoint, type PxTarget } from './hitTest';
+import { ArrowShape, PitchView, PLAYER_RADIUS } from './PitchView';
 
-const SNAP_DISTANCE = 2.6;
 const MIN_DRAW_LENGTH = 1.5;
 
 /** A gesture belongs to the pointer (finger) that started it; other pointers are ignored meanwhile. */
@@ -21,15 +21,34 @@ export function EditorPitch({
   state,
   dispatch,
   names,
+  pitch = DEFAULT_PITCH,
 }: {
   state: EditorState;
   dispatch: Dispatch<EditorAction>;
   names: Record<string, string>;
+  pitch?: PitchSpec;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const { scenario, frameIndex, tool, selection } = state;
   const frame = scenario.frames[frameIndex]!;
+  const previous = frameIndex > 0 ? scenario.frames[frameIndex - 1] : undefined;
+  // CSS pixels per metre at the current size; hit areas and snapping are measured in screen pixels.
+  const [pxPerMetre, setPxPerMetre] = useState<number | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const measure = () => {
+      const ctm = svg.getScreenCTM();
+      if (ctm) setPxPerMetre(Math.hypot(ctm.a, ctm.b) || undefined);
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(svg);
+    return () => ro.disconnect();
+  }, []);
 
   const toPitch = (e: PointerEvent): Point => {
     const svg = svgRef.current;
@@ -39,18 +58,21 @@ export function EditorPitch({
     return { x: p.x, y: p.y };
   };
 
-  /** Snaps to the nearest player or ball, so passes and runs start/end exactly at an entity. */
+  const toPx = (p: Point): PxPoint => {
+    const ctm = svgRef.current?.getScreenCTM();
+    if (!ctm) return p;
+    const q = new DOMPoint(p.x, p.y).matrixTransform(ctm);
+    return { x: q.x, y: q.y };
+  };
+
+  /** Players and ball with their positions in screen pixels. */
+  const entityTargets = (): (PxTarget & { at: Point })[] =>
+    Object.entries(frame.positions).map(([id, at]) => ({ id, at, ...toPx(at) }));
+
+  /** Snaps to the nearest player or ball within 24 screen px, so passes and runs start/end exactly at an entity. */
   const snap = (p: Point, except?: Point): Point => {
-    let best: Point | null = null;
-    let bestDist = SNAP_DISTANCE;
-    for (const q of Object.values(frame.positions)) {
-      const d = distance(p, q);
-      if (d < bestDist && (!except || distance(q, except) > 0.01)) {
-        best = q;
-        bestDist = d;
-      }
-    }
-    return best ? { ...best } : p;
+    const hit = snapTarget(toPx(p), entityTargets(), except && toPx(except));
+    return hit ? { ...hit.at } : p;
   };
 
   const capture = (e: PointerEvent) => {
@@ -70,7 +92,7 @@ export function EditorPitch({
 
   const onBackgroundPointerDown = (e: PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0 || gesture) return;
-    const p = clampToPitch(toPitch(e));
+    const p = clampToPitch(toPitch(e), 3, pitch);
     if (tool === 'add-home' || tool === 'add-away') {
       dispatch({ type: 'addPlayer', team: tool === 'add-home' ? 'home' : 'away', at: p });
       return;
@@ -82,8 +104,11 @@ export function EditorPitch({
     startArrowOrZone(tool === 'zone' ? p : snap(p), e);
   };
 
-  const onEntityPointerDown = (id: string, e: PointerEvent<SVGGElement>) => {
+  const onEntityPointerDown = (domId: string, e: PointerEvent<SVGGElement>) => {
     if (e.button !== 0) return;
+    // The nearest centre wins where touch areas overlap, whichever token the browser hit first.
+    const id =
+      hitEntity({ x: e.clientX, y: e.clientY }, entityTargets(), PLAYER_RADIUS * (pxPerMetre ?? 0))?.id ?? domId;
     if (gesture) {
       e.stopPropagation();
       return;
@@ -118,12 +143,12 @@ export function EditorPitch({
         type: 'moveEntity',
         id: gesture.id,
         dragId: gesture.dragId,
-        to: clampToPitch({ x: p.x + gesture.offset.x, y: p.y + gesture.offset.y }),
+        to: clampToPitch({ x: p.x + gesture.offset.x, y: p.y + gesture.offset.y }, 3, pitch),
       });
     } else if (gesture.kind === 'arrow') {
-      setGesture({ ...gesture, to: snap(clampToPitch(p), gesture.from) });
+      setGesture({ ...gesture, to: snap(clampToPitch(p, 3, pitch), gesture.from) });
     } else {
-      setGesture({ ...gesture, to: clampToPitch(p, 0) });
+      setGesture({ ...gesture, to: clampToPitch(p, 0, pitch) });
     }
   };
 
@@ -186,6 +211,9 @@ export function EditorPitch({
       selection={selection}
       names={names}
       guides={scenario.guides}
+      pitch={pitch}
+      pxPerMetre={pxPerMetre}
+      ghostPositions={previous?.positions}
       overlay={overlay}
       onBackgroundPointerDown={onBackgroundPointerDown}
       onEntityPointerDown={onEntityPointerDown}
