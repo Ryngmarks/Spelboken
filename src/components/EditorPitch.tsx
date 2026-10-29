@@ -3,7 +3,7 @@ import { newId } from '../domain/scenario';
 import { clampToPitch, DEFAULT_PITCH, distance, type PitchSpec } from '../domain/pitch';
 import type { ArrowType, Point } from '../domain/types';
 import type { EditorAction, EditorState } from '../editor/editorReducer';
-import { hitEntity, snapTarget, type PxPoint, type PxTarget } from './hitTest';
+import { hitArrow, hitEntity, snapTarget, type PxPoint, type PxTarget } from './hitTest';
 import { ArrowShape, PitchView, PLAYER_RADIUS } from './PitchView';
 
 const MIN_DRAW_LENGTH = 1.5;
@@ -129,9 +129,13 @@ export function EditorPitch({
     capture(e);
   };
 
-  const onDrawingPointerDown = (id: string, e: PointerEvent<SVGGElement>) => {
+  const onDrawingPointerDown = (domId: string, e: PointerEvent<SVGGElement>) => {
     if (tool !== 'select' || e.button !== 0 || gesture) return;
     e.stopPropagation();
+    // Wide hit strokes overlap; pick the arrow whose line is nearest, not the one painted last.
+    const arrows = frame.drawings.flatMap((d) => (d.type === 'zone' ? [] : [{ id: d.id, from: toPx(d.from), to: toPx(d.to) }]));
+    const clickedZone = frame.drawings.some((d) => d.id === domId && d.type === 'zone');
+    const id = clickedZone ? domId : hitArrow({ x: e.clientX, y: e.clientY }, arrows) ?? domId;
     dispatch({ type: 'select', selection: { kind: 'drawing', id } });
   };
 
