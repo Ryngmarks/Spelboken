@@ -130,7 +130,8 @@ describe('movement planning', () => {
     expect(BALL_FOLLOWS).toBe(true);
     const base = setup();
     const planned = planMove(base, 0, { entityId: 'ball', to: { x: 30, y: 20 }, targetId: 'receiver', arrowId: 'manual' }, false);
-    expect(planned.frames[1]!.positions.ball).toEqual(base.frames[0]!.positions.ball);
+    // Off only stops the ball following a receiver: a dragged ball still lands where it was dropped.
+    expect(planned.frames[1]!.positions.ball).toEqual({ x: 30, y: 20 });
     expect(planned.frames[0]!.drawings[0]).toEqual({ id: 'manual', type: 'pass', from: { x: 10.8, y: 10 }, to: { x: 30, y: 20 } });
     const dribble = planMove(base, 0, { entityId: 'carrier', to: { x: 20, y: 20 }, arrowId: 'dribble' }, false);
     expect(dribble.frames[1]!.positions.ball).toEqual(base.frames[0]!.positions.ball);
@@ -138,7 +139,7 @@ describe('movement planning', () => {
     manual.frames[1]!.positions.ball = { x: 10.8, y: 10 };
     expect(reconcileLinks(manual, false).frames[1]!.positions.ball).toEqual({ x: 10.8, y: 10 });
     expect(reconcileLinks(manual, true).frames[1]!.positions.ball).toEqual({ x: 30.8, y: 20 });
-    expect(planMove(base, 0, { entityId: 'ball', to: { x: 11, y: 10 }, arrowId: 'short' }, false).frames[1]!.positions.ball).toEqual(base.frames[0]!.positions.ball);
+    expect(planMove(base, 0, { entityId: 'ball', to: { x: 11, y: 10 }, arrowId: 'short' }, false).frames[1]!.positions.ball).toEqual({ x: 11, y: 10 });
   });
 
   it('moves the ball with a short dribble even though no arrow is created', () => {

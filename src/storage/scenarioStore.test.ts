@@ -187,3 +187,23 @@ describe('parseScenario guides', () => {
     expect(parseScenario(old)?.guides).toEqual([]);
   });
 });
+
+describe('hostile entity ids', () => {
+  it('does not keep links to ids that only exist on Object.prototype', () => {
+    const s = createScenario();
+    const hostile = {
+      ...s,
+      entities: [...s.entities, { id: 'constructor', kind: 'player', team: 'home', number: 5, label: '' }],
+      frames: [
+        { ...s.frames[0]!, drawings: [{ id: 'a', type: 'run', from: { x: 1, y: 1 }, to: { x: 9, y: 9 }, entityId: 'constructor' }] },
+        { ...s.frames[0]!, id: 'f2', drawings: [] },
+      ],
+    };
+    const parsed = parseScenario(JSON.parse(JSON.stringify(hostile)));
+    expect(parsed).not.toBeNull();
+    const arrow = parsed!.frames[0]!.drawings[0]!;
+    expect(arrow.type !== 'zone' && arrow.entityId).toBeFalsy();
+    // Saving and loading again must not lose the scenario.
+    expect(parseScenario(JSON.parse(JSON.stringify(parsed)))).not.toBeNull();
+  });
+});

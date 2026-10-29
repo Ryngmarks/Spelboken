@@ -20,17 +20,22 @@ function distance(from: Point, to: Point): number {
 export function ballHolder(scenario: Scenario, frameIndex: number): PlayerEntity | undefined {
   const frame = scenario.frames[frameIndex];
   const ball = scenario.entities.find((entity) => entity.kind === 'ball');
-  const at = ball && frame?.positions[ball.id];
+  const at = ball && frame && positionOf(frame.positions, ball.id);
   if (!frame || !at) return undefined;
   return scenario.entities
     .filter((entity): entity is PlayerEntity => entity.kind === 'player')
-    .filter((player) => frame.positions[player.id] && distance(at, frame.positions[player.id]!) <= BALL_HOLDER_DISTANCE)
+    .filter((player) => positionOf(frame.positions, player.id) && distance(at, frame.positions[player.id]!) <= BALL_HOLDER_DISTANCE)
     .sort((first, second) => distance(at, frame.positions[first.id]!) - distance(at, frame.positions[second.id]!))[0];
 }
 
 export function arrowTypeFor(scenario: Scenario, frameIndex: number, entityId: string): ArrowType {
   if (scenario.entities.find((entity) => entity.id === entityId)?.kind === 'ball') return 'pass';
   return ballHolder(scenario, frameIndex)?.id === entityId ? 'dribble' : 'run';
+}
+
+/** Own-property lookup, so ids like "constructor" from a hostile import never hit Object.prototype. */
+function positionOf(positions: Record<string, Point>, id: string): Point | undefined {
+  return Object.hasOwn(positions, id) ? positions[id] : undefined;
 }
 
 function beside(player: PlayerEntity, at: Point): Point {
@@ -52,13 +57,13 @@ export function reconcileLinks(scenario: Scenario, ballFollows: boolean = BALL_F
     frame.drawings = frame.drawings.map((drawing) => {
       if (drawing.type === 'zone') return drawing;
       if (!drawing.entityId) return drawing.targetId ? unlink(drawing) : drawing;
-      if (!next || !entities.has(drawing.entityId) || !frame.positions[drawing.entityId] ||
-          !next.positions[drawing.entityId] || linked.has(drawing.entityId)) return unlink(drawing);
+      if (!next || !entities.has(drawing.entityId) || !positionOf(frame.positions, drawing.entityId) ||
+          !positionOf(next.positions, drawing.entityId) || linked.has(drawing.entityId)) return unlink(drawing);
       linked.add(drawing.entityId);
       const target = drawing.targetId && entities.get(drawing.targetId);
       const holder = drawing.targetId ? ballHolder({ ...scenario, frames }, index) : undefined;
       if (drawing.targetId && (drawing.type !== 'pass' || entities.get(drawing.entityId)?.kind !== 'ball' ||
-          !target || target.kind !== 'player' || !next.positions[target.id] || (holder && holder.team !== target.team))) {
+          !target || target.kind !== 'player' || !positionOf(next.positions, target.id) || (holder && holder.team !== target.team))) {
         const { targetId: _targetId, ...withoutTarget } = drawing;
         return withoutTarget;
       }
@@ -66,11 +71,11 @@ export function reconcileLinks(scenario: Scenario, ballFollows: boolean = BALL_F
     });
     if (!next) return;
     const arrows = frame.drawings.filter((drawing): drawing is ArrowDrawing => drawing.type !== 'zone' && !!drawing.entityId);
-    if (ballFollows && ball && next.positions[ball.id]) {
+    if (ballFollows && ball && positionOf(next.positions, ball.id)) {
       const pass = arrows.find((arrow) => arrow.entityId === ball.id);
       const carrier = arrows.find((arrow) => arrow.type === 'dribble' && entities.get(arrow.entityId!)?.kind === 'player');
       const player = entities.get(pass?.targetId ?? (!pass ? carrier?.entityId ?? '' : ''));
-      if (player?.kind === 'player' && next.positions[player.id]) next.positions[ball.id] = beside(player, next.positions[player.id]!);
+      if (player?.kind === 'player' && positionOf(next.positions, player.id)) next.positions[ball.id] = beside(player, next.positions[player.id]!);
     }
     frame.drawings = frame.drawings.map((drawing) => drawing.type !== 'zone' && drawing.entityId
       ? { ...drawing, from: { ...frame.positions[drawing.entityId]! }, to: { ...next.positions[drawing.entityId]! } }
@@ -87,7 +92,7 @@ export function planMove(
 ): Scenario {
   const source = scenario.frames[frameIndex];
   const entity = scenario.entities.find((candidate) => candidate.id === command.entityId);
-  const from = source?.positions[command.entityId];
+  const from = source && positionOf(source.positions, command.entityId);
   if (!source || !entity || !from || !Number.isFinite(command.to.x) || !Number.isFinite(command.to.y)) return scenario;
   const frames = scenario.frames.map((frame) => ({ ...frame, positions: { ...frame.positions }, drawings: [...frame.drawings] }));
   if (!frames[frameIndex + 1]) frames.push({
@@ -100,7 +105,7 @@ export function planMove(
   const existing = current.drawings.find((drawing) => drawing.type !== 'zone' && drawing.entityId === entity.id);
   current.drawings = current.drawings.filter((drawing) => drawing.type === 'zone' || drawing.entityId !== entity.id);
   const short = distance(from, command.to) < MOVE_THRESHOLD;
-  next.positions[entity.id] = entity.kind === 'ball' && !ballFollows ? { ...from } : { ...command.to };
+  next.positions[entity.id] = { ...command.to };
   if (!short) {
     const arrow: ArrowDrawing = {
       id: existing?.id ?? command.arrowId,
