@@ -1,0 +1,264 @@
+/* Prototype only (WO-05). Portrait: one column. Landscape phone: pitch left, controls in a column on the right. */
+.proto {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  gap: 6px;
+  overflow: hidden;
+}
+.proto__side {
+  display: contents;
+}
+.proto__stage {
+  order: 4;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+}
+.proto__pitch {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.proto__pitch .pitch {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius);
+}
+.proto__bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.proto__spacer {
+  flex: 1;
+}
+.proto__badge {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+  flex: none;
+}
+.proto__hint {
+  margin: 0;
+  min-height: 2.9em;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+}
+.proto__step {
+  min-width: 5.5em;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.proto__observer {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+}
+.proto__task {
+  margin: 6px 2px 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.proto__chips,
+.proto__selbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Buttons: every target is at least 44 x 44 CSS px. */
+.pbtn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  touch-action: manipulation;
+}
+.pbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.pbtn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.pbtn--danger {
+  background: transparent;
+  border-color: #5a2a2a;
+  color: var(--danger);
+}
+.pbtn--live {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.pbtn--chip[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.pbtn--icon {
+  padding: 0;
+}
+
+.proto__tools {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.tbtn {
+  min-height: 56px;
+  min-width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  cursor: pointer;
+  font-size: 0.78rem;
+  line-height: 1.1;
+  touch-action: manipulation;
+}
+.tbtn[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.proto__copy {
+  fill: rgb(255 255 255 / 0.5);
+}
+.proto__ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.6;
+}
+
+/* Result screen */
+.proto--result {
+  overflow: auto;
+  height: auto;
+  min-height: 100dvh;
+}
+.proto__result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.proto__title {
+  font-size: 1.05rem;
+}
+.proto__form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.proto__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  flex: 1 1 140px;
+}
+.proto__form select {
+  min-height: 44px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 8px;
+}
+.proto__tablewrap {
+  overflow-x: auto;
+}
+.proto__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.proto__table th,
+.proto__table td {
+  text-align: left;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.proto__copied {
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+.proto__log {
+  min-height: 160px;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.72rem;
+}
+
+/* Landscape phone: pitch on the left, controls scroll in a column on the right. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .proto:not(.proto--result) {
+    flex-direction: row;
+  }
+  .proto__side {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 250px;
+    flex: none;
+    min-height: 0;
+    overflow-y: auto;
+    order: 2;
+  }
+  .proto__stage {
+    order: 1;
+  }
+  .proto__bar {
+    flex-wrap: wrap;
+  }
+  .proto__tools {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .proto__hint {
+    min-height: 0;
+    font-size: 0.8rem;
+  }
+}
+@media (min-width: 900px) {
+  .proto__tools {
+    max-width: 560px;
+  }
+}

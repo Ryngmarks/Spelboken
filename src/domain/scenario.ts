@@ -1,4 +1,5 @@
 import { formationSlots } from './formations';
+import { reconcileLinks, removeLinkedMove } from './movement';
 import { PITCH_LENGTH, PITCH_WIDTH } from './pitch';
 import type { Drawing, Entity, Frame, PlayerEntity, Point, Scenario, Team } from './types';
 
@@ -49,7 +50,7 @@ function mapFrames(s: Scenario, fn: (f: Frame, index: number) => Frame): Scenari
 
 function updateFrame(s: Scenario, frameIndex: number, fn: (f: Frame) => Frame): Scenario {
   if (!s.frames[frameIndex]) return s;
-  return mapFrames(s, (f, i) => (i === frameIndex ? fn(f) : f));
+  return reconcileLinks(mapFrames(s, (f, i) => (i === frameIndex ? fn(f) : f)));
 }
 
 /** Replaces all players of a team with the given formation, in every frame. */
@@ -63,7 +64,7 @@ export function applyFormation(s: Scenario, team: Team, formation: string): Scen
     number: i + 1,
     label: slot.label,
   }));
-  return {
+  return reconcileLinks({
     ...s,
     entities: [...s.entities.filter((e) => !removed.has(e.id)), ...added],
     frames: s.frames.map((f) => {
@@ -75,7 +76,7 @@ export function applyFormation(s: Scenario, team: Team, formation: string): Scen
       });
       return { ...f, positions };
     }),
-  };
+  });
 }
 
 export function nextFreeNumber(s: Scenario, team: Team): number {
@@ -111,13 +112,13 @@ function addEntity(s: Scenario, entity: Entity, at: Point): Scenario {
 }
 
 export function removeEntity(s: Scenario, id: string): Scenario {
-  return {
+  return reconcileLinks({
     ...mapFrames(s, (f) => {
       const { [id]: _removed, ...positions } = f.positions;
       return { ...f, positions };
     }),
     entities: s.entities.filter((e) => e.id !== id),
-  };
+  });
 }
 
 export function updatePlayer(
@@ -125,7 +126,7 @@ export function updatePlayer(
   id: string,
   patch: Partial<Pick<PlayerEntity, 'number' | 'label' | 'team'>>,
 ): Scenario {
-  return {
+  return reconcileLinks({
     ...s,
     entities: s.entities.map((e) => {
       if (e.id !== id || e.kind !== 'player') return e;
@@ -134,7 +135,7 @@ export function updatePlayer(
       if (next.team === 'away') delete next.personId;
       return next;
     }),
-  };
+  });
 }
 
 export function moveEntity(s: Scenario, frameIndex: number, id: string, to: Point): Scenario {
@@ -155,12 +156,12 @@ export function insertFrameAfter(s: Scenario, index: number): Scenario {
   };
   const frames = [...s.frames];
   frames.splice(index + 1, 0, copy);
-  return { ...s, frames };
+  return reconcileLinks({ ...s, frames });
 }
 
 export function removeFrame(s: Scenario, index: number): Scenario {
   if (s.frames.length <= 1 || !s.frames[index]) return s;
-  return { ...s, frames: s.frames.filter((_, i) => i !== index) };
+  return reconcileLinks({ ...s, frames: s.frames.filter((_, i) => i !== index) });
 }
 
 export function moveFrame(s: Scenario, from: number, to: number): Scenario {
@@ -168,7 +169,7 @@ export function moveFrame(s: Scenario, from: number, to: number): Scenario {
   const frames = [...s.frames];
   const [frame] = frames.splice(from, 1);
   frames.splice(to, 0, frame!);
-  return { ...s, frames };
+  return reconcileLinks({ ...s, frames });
 }
 
 export function setCaption(s: Scenario, frameIndex: number, caption: string): Scenario {
@@ -180,6 +181,8 @@ export function addDrawing(s: Scenario, frameIndex: number, drawing: Drawing): S
 }
 
 export function removeDrawing(s: Scenario, frameIndex: number, id: string): Scenario {
+  const removed = removeLinkedMove(s, frameIndex, id);
+  if (removed !== s) return removed;
   return updateFrame(s, frameIndex, (f) => ({
     ...f,
     drawings: f.drawings.filter((d) => d.id !== id),
@@ -204,7 +207,7 @@ export function duplicateScenario(s: Scenario, now = new Date()): Scenario {
     return ids.get(id)!;
   };
   const stamp = now.toISOString();
-  return {
+  return reconcileLinks({
     ...structuredClone(s),
     id: newId(),
     title: `${s.title} (kopia)`,
@@ -215,10 +218,16 @@ export function duplicateScenario(s: Scenario, now = new Date()): Scenario {
       positions: Object.fromEntries(
         Object.entries(f.positions).map(([id, p]) => [remap(id), { ...p }]),
       ),
+      drawings: f.drawings.map((drawing) => ({
+        ...structuredClone(drawing),
+        id: newId(),
+        ...(drawing.type !== 'zone' && drawing.entityId ? { entityId: remap(drawing.entityId) } : {}),
+        ...(drawing.type !== 'zone' && drawing.targetId ? { targetId: remap(drawing.targetId) } : {}),
+      })),
     })),
     createdAt: stamp,
     updatedAt: stamp,
-  };
+  });
 }
 
 export function easeInOut(t: number): number {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BALL_ID, createScenario } from '../domain/scenario';
-import { editorReducer, initEditor, type EditorAction, type EditorState } from './editorReducer';
+import { editorReducer, initEditor, type EditorAction, type EditorState, type Tool } from './editorReducer';
 
 const run = (state: EditorState, ...actions: EditorAction[]) => actions.reduce(editorReducer, state);
 const move = (x: number, dragId: string): EditorAction => ({
@@ -45,6 +45,24 @@ describe('editorReducer', () => {
     expect(s.selection).toEqual({ kind: 'drawing', id: 'a1' });
     s = editorReducer(s, { type: 'removeSelected' });
     expect(s.scenario.frames[1]!.drawings).toHaveLength(0);
+  });
+
+  const tools: Tool[] = ['select', 'run', 'pass', 'dribble', 'press', 'zone', 'add-home', 'add-away'];
+
+  it.each(tools)('selects the move tool after inserting a frame from %s', (tool) => {
+    const start = initEditor(createScenario());
+    const state = run(
+      start,
+      { type: 'setTool', tool },
+      { type: 'select', selection: { kind: 'entity', id: BALL_ID } },
+      { type: 'insertFrame' },
+    );
+    expect(state.tool).toBe('select');
+    expect(state.selection).toBeNull();
+    expect(state.frameIndex).toBe(1);
+    expect(state.scenario.frames).toHaveLength(2);
+    expect(state.past).toEqual([start.scenario]);
+    expect(run(state, { type: 'undo' }).scenario).toBe(start.scenario);
   });
 
   it('drops a drawing selection when switching frame', () => {

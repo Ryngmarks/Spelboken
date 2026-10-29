@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { CORRIDORS, PITCH_LENGTH, PITCH_WIDTH, THIRDS, type PitchBand } from './pitch';
+import {
+  clampToPitch,
+  CORRIDORS,
+  corridorsFor,
+  DEFAULT_PITCH,
+  PITCH_LENGTH,
+  PITCH_WIDTH,
+  THIRDS,
+  thirdsFor,
+  type PitchBand,
+  type PitchSpec,
+} from './pitch';
 
 function expectContiguous(bands: PitchBand[], total: number) {
   expect(bands[0]!.from).toBe(0);
@@ -20,5 +31,39 @@ describe('pitch guides', () => {
   it('thirds cover the length in equal parts', () => {
     expectContiguous(THIRDS, PITCH_LENGTH);
     for (const b of THIRDS) expect(b.to - b.from).toBeCloseTo(35);
+  });
+});
+
+describe('PitchSpec', () => {
+  const small: PitchSpec = {
+    length: 55,
+    width: 35,
+    boxDepth: 9,
+    boxHalf: 10,
+    sixDepth: 3,
+    sixHalf: 5,
+    goalHalf: 2,
+    spotDistance: 7,
+    circleRadius: 6,
+  };
+
+  it('defaults to 105 x 68 and the exported bands equal the derived ones', () => {
+    expect([DEFAULT_PITCH.length, DEFAULT_PITCH.width]).toEqual([105, 68]);
+    expect(CORRIDORS).toEqual(corridorsFor(DEFAULT_PITCH));
+    expect(THIRDS).toEqual(thirdsFor(DEFAULT_PITCH));
+  });
+
+  it('derives corridors and thirds from an injected 55 x 35 spec', () => {
+    const corridors = corridorsFor(small);
+    expectContiguous(corridors, 35);
+    expect(corridors[2]!.to - corridors[2]!.from).toBeCloseTo(10);
+    const thirds = thirdsFor(small);
+    expectContiguous(thirds, 55);
+    for (const b of thirds) expect(b.to - b.from).toBeCloseTo(55 / 3);
+  });
+
+  it('clamps to the given spec', () => {
+    expect(clampToPitch({ x: 100, y: 100 }, 3, small)).toEqual({ x: 58, y: 38 });
+    expect(clampToPitch({ x: 200, y: 200 })).toEqual({ x: 108, y: 71 });
   });
 });

@@ -1,7 +1,8 @@
 import type { PointerEvent, ReactNode, Ref } from 'react';
-import { CORRIDORS, PITCH_LENGTH, PITCH_WIDTH, THIRDS } from '../domain/pitch';
+import { corridorsFor, DEFAULT_PITCH, thirdsFor, type PitchSpec } from '../domain/pitch';
 import type { ArrowDrawing, Drawing, Entity, PitchGuide, Point } from '../domain/types';
 import type { Selection } from '../editor/editorReducer';
+import { arrowHitWidthPx, entityHitRadiusPx } from './hitTest';
 
 export const PLAYER_RADIUS = 1.9;
 const BALL_RADIUS = 0.85;
@@ -39,6 +40,12 @@ export interface PitchViewProps {
   orientation?: 'landscape' | 'portrait';
   /** Reference lines such as corridors and thirds. */
   guides?: PitchGuide[];
+  /** Pitch size and markings. Defaults to 11 v 11 (105 × 68). */
+  pitch?: PitchSpec;
+  /** Rendered scale (CSS px per metre). When given, touch hit areas are sized in screen pixels. */
+  pxPerMetre?: number;
+  /** Where players and ball stood in the previous step; drawn faint and not interactive. */
+  ghostPositions?: Record<string, Point>;
 }
 
 export function PitchView(props: PitchViewProps) {
@@ -51,9 +58,12 @@ export function PitchView(props: PitchViewProps) {
     overlay,
     interactive = false,
     orientation = 'landscape',
+    pitch = DEFAULT_PITCH,
+    pxPerMetre,
+    ghostPositions,
   } = props;
   const portrait = orientation === 'portrait' && !interactive;
-  const [vw, vh] = portrait ? [PITCH_WIDTH, PITCH_LENGTH] : [PITCH_LENGTH, PITCH_WIDTH];
+  const [vw, vh] = portrait ? [pitch.width, pitch.length] : [pitch.length, pitch.width];
 
   return (
     <svg
@@ -69,9 +79,9 @@ export function PitchView(props: PitchViewProps) {
     >
       <ArrowMarkers />
       {/* Portrait maps (x, y) to (y, L - x): own goal at the bottom, attacking upwards. */}
-      <g transform={portrait ? `translate(0 ${PITCH_LENGTH}) rotate(-90)` : undefined}>
-      <PitchMarkings />
-      {props.guides && props.guides.length > 0 && <PitchGuides guides={props.guides} portrait={portrait} />}
+      <g transform={portrait ? `translate(0 ${pitch.length}) rotate(-90)` : undefined}>
+      <PitchMarkings pitch={pitch} />
+      {props.guides && props.guides.length > 0 && <PitchGuides guides={props.guides} portrait={portrait} pitch={pitch} />}
       <g opacity={drawingOpacity}>
         {drawings.map((d) => (
           <DrawingShape
@@ -80,9 +90,27 @@ export function PitchView(props: PitchViewProps) {
             positions={positions}
             selected={selection?.kind === 'drawing' && selection.id === d.id}
             onPointerDown={props.onDrawingPointerDown}
+            pxPerMetre={pxPerMetre}
           />
         ))}
       </g>
+      {ghostPositions && (
+        <g className="ghosts" aria-hidden pointerEvents="none">
+          {entities.map((e) => {
+            const g = ghostPositions[e.id];
+            if (!g) return null;
+            return (
+              <circle
+                key={e.id}
+                cx={g.x}
+                cy={g.y}
+                r={e.kind === 'ball' ? BALL_RADIUS : PLAYER_RADIUS}
+                className={`ghost ghost--${e.kind === 'ball' ? 'ball' : e.team}`}
+              />
+            );
+          })}
+        </g>
+      )}
       {/* Ball last so it is drawn on top of players. */}
       {[...entities]
         .sort((a, b) => (a.kind === 'ball' ? 1 : 0) - (b.kind === 'ball' ? 1 : 0))
@@ -98,6 +126,7 @@ export function PitchView(props: PitchViewProps) {
               onPointerDown={props.onEntityPointerDown}
               upright={portrait}
               name={props.names?.[e.id]}
+              pxPerMetre={pxPerMetre}
             />
           );
         })}
@@ -107,17 +136,10 @@ export function PitchView(props: PitchViewProps) {
   );
 }
 
-function PitchMarkings() {
-  const L = PITCH_LENGTH;
-  const W = PITCH_WIDTH;
+function PitchMarkings({ pitch }: { pitch: PitchSpec }) {
+  const { length: L, width: W, boxDepth, boxHalf, sixDepth, sixHalf, goalHalf, circleRadius: r } = pitch;
   const midY = W / 2;
-  const boxDepth = 16.5;
-  const boxHalf = 20.16;
-  const sixDepth = 5.5;
-  const sixHalf = 9.16;
-  const goalHalf = 3.66;
-  const r = 9.15;
-  const arcDy = Math.sqrt(r * r - (boxDepth - 11) ** 2);
+  const arcDy = Math.sqrt(Math.max(0, r * r - (boxDepth - pitch.spotDistance) ** 2));
   const stripes = 10;
 
   const end = (flip: boolean) => {
@@ -126,7 +148,7 @@ function PitchMarkings() {
       <>
         <rect x={Math.min(x(0), x(boxDepth))} y={midY - boxHalf} width={boxDepth} height={boxHalf * 2} />
         <rect x={Math.min(x(0), x(sixDepth))} y={midY - sixHalf} width={sixDepth} height={sixHalf * 2} />
-        <circle cx={x(11)} cy={midY} r={0.25} className="pitch__spot" />
+        <circle cx={x(pitch.spotDistance)} cy={midY} r={0.25} className="pitch__spot" />
         <path
           d={`M ${x(boxDepth)} ${midY - arcDy} A ${r} ${r} 0 0 ${flip ? 0 : 1} ${x(boxDepth)} ${midY + arcDy}`}
         />
@@ -164,16 +186,16 @@ function PitchMarkings() {
 }
 
 /** Corridors and thirds as dashed lines with labels. Labels stay upright in portrait mode. */
-function PitchGuides({ guides, portrait }: { guides: PitchGuide[]; portrait: boolean }) {
-  const L = PITCH_LENGTH;
-  const W = PITCH_WIDTH;
+function PitchGuides({ guides, portrait, pitch }: { guides: PitchGuide[]; portrait: boolean; pitch: PitchSpec }) {
+  const L = pitch.length;
+  const W = pitch.width;
   const upright = portrait ? ' rotate(90)' : '';
   const corridors = guides.includes('corridors');
   const thirds = guides.includes('thirds');
   return (
     <g className="guides" aria-hidden>
       {corridors &&
-        CORRIDORS.map((b, i) => (
+        corridorsFor(pitch).map((b, i) => (
           <g key={`c${i}`}>
             {/* Inner corridors (half-spaces) are tinted so the five lanes are easy to tell apart. */}
             {(i === 1 || i === 3) && <rect x={0} y={b.from} width={L} height={b.to - b.from} className="guides__tint" />}
@@ -184,7 +206,7 @@ function PitchGuides({ guides, portrait }: { guides: PitchGuide[]; portrait: boo
           </g>
         ))}
       {thirds &&
-        THIRDS.map((b, i) => (
+        thirdsFor(pitch).map((b, i) => (
           <g key={`t${i}`}>
             {i > 0 && <line x1={b.from} y1={0} x2={b.from} y2={W} className="guides__line guides__line--thirds" />}
             {/* Along the far touchline; in portrait that is the right edge, so anchor the text there. */}
@@ -284,11 +306,13 @@ function DrawingShape({
   positions,
   selected,
   onPointerDown,
+  pxPerMetre,
 }: {
   drawing: Drawing;
   positions: Record<string, Point>;
   selected: boolean;
   onPointerDown?: (id: string, e: PointerEvent<SVGGElement>) => void;
+  pxPerMetre?: number;
 }) {
   const handle = onPointerDown ? (e: PointerEvent<SVGGElement>) => onPointerDown(d.id, e) : undefined;
   if (d.type === 'zone') {
@@ -302,10 +326,19 @@ function DrawingShape({
   return (
     <g className={`drawing ${selected ? 'drawing--selected' : ''}`} onPointerDown={handle}>
       {/* Wide invisible stroke makes thin arrows easy to tap. */}
-      <path d={`M ${from.x} ${from.y} L ${to.x} ${to.y}`} className="drawing__hit" />
+      <path
+        d={`M ${from.x} ${from.y} L ${to.x} ${to.y}`}
+        className="drawing__hit"
+        style={pxPerMetre ? { strokeWidth: arrowHitWidthPx(0) / pxPerMetre } : undefined}
+      />
       <ArrowShape type={d.type} from={from} to={to} />
     </g>
   );
+}
+
+/** Hit radius in metres: the drawn one, or the 22 px touch minimum at the current scale if that is larger. */
+function hitRadius(drawn: number, pxPerMetre?: number): number {
+  return pxPerMetre ? entityHitRadiusPx(drawn * pxPerMetre) / pxPerMetre : drawn;
 }
 
 function EntityShape({
@@ -315,6 +348,7 @@ function EntityShape({
   onPointerDown,
   upright,
   name,
+  pxPerMetre,
 }: {
   entity: Entity;
   at: Point;
@@ -323,6 +357,7 @@ function EntityShape({
   /** Counter-rotates the entity in portrait mode so numbers stay readable. */
   upright: boolean;
   name?: string;
+  pxPerMetre?: number;
 }) {
   const handle = onPointerDown ? (e: PointerEvent<SVGGElement>) => onPointerDown(entity.id, e) : undefined;
   const transform = `translate(${at.x} ${at.y})${upright ? ' rotate(90)' : ''}`;
@@ -330,7 +365,7 @@ function EntityShape({
     return (
       <g className={`entity ball ${selected ? 'entity--selected' : ''}`} transform={transform} onPointerDown={handle}>
         {selected && <circle r={BALL_RADIUS + 0.9} className="entity__ring" />}
-        <circle r={BALL_RADIUS + 1.2} className="entity__hit" />
+        <circle r={hitRadius(BALL_RADIUS + 1.2, pxPerMetre)} className="entity__hit" />
         <circle r={BALL_RADIUS} className="ball__body" />
       </g>
     );
@@ -342,6 +377,7 @@ function EntityShape({
       onPointerDown={handle}
     >
       {selected && <circle r={PLAYER_RADIUS + 0.8} className="entity__ring" />}
+      {pxPerMetre && <circle r={hitRadius(PLAYER_RADIUS, pxPerMetre)} className="entity__hit" />}
       <circle r={PLAYER_RADIUS} className="player__body" />
       <text className="player__number" dy="0.05em">
         {entity.number}

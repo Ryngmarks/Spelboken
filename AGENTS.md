@@ -68,3 +68,14 @@ och resultat, avvikelser från planen och vad som återstår.
 - `npm run dev` – utvecklingsserver. `npm test` – enhetstester. `npm run build` – typkontroll + bygg.
 - Domänlogik (`src/domain`) är ren TypeScript utan React och ska ha enhetstester.
 - UI-texter på svenska. Kod och identifierare på engelska.
+
+<!-- RAS:BEGIN - managed by ryngmark-agents/tools/ras-connect.ps1, edit outside these markers -->
+## RAS (Ryngmark Agent System)
+This project uses RAS, rules in `C:/Users/johan/Desktop/Claude johan/ryngmark-agents/AGENTS.md` (roles, sizes, flow, evidence levels).
+The rules in this project take precedence over RAS.
+- The main session is the RAS Project Manager. Size each request SMALL/MEDIUM/LARGE; MEDIUM/LARGE go through the
+  `ras-*` skills, starting with `/ras-discovery`.
+- Missions live in `docs/ras/<mission>/`; overview in `docs/ras/README.md`; onboarding in `docs/ras/onboarding/`.
+- Team board name: `Coach Helper` (`C:/Users/johan/Desktop/Claude johan/ryngmark-agents/tools/ras-status.ps1 -Project "Coach Helper"`).
+- Checks: test `npm test`, build `npm run build`, run `npm start`.
+<!-- RAS:END -->

@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { createPerson, type Person } from '../domain/roster';
+import { POSITION_INFO } from '../domain/positions';
 import { POSITIONS } from '../domain/types';
 
 interface SquadProps {
@@ -38,6 +39,8 @@ export function Squad({ roster, onSave, onRemove, onClose }: SquadProps) {
           Koppla spelarna på planen till riktiga personer. Spara bara det som behövs: namn, nummer och positioner.
           Exporterade scenariofiler innehåller aldrig namnen.
         </p>
+
+        <PositionHelp />
 
         <form className="panel__section squad__add" onSubmit={add}>
           <h2>Lägg till spelare</h2>
@@ -118,6 +121,8 @@ function PositionChips({ value, onChange }: { value: string[]; onChange: (v: str
             type="button"
             className={`chip ${on ? 'chip--on' : ''}`}
             aria-pressed={on}
+            title={POSITION_INFO[pos]?.name}
+            aria-label={`${pos} – ${POSITION_INFO[pos]?.name ?? pos}`}
             onClick={() => onChange(on ? value.filter((p) => p !== pos) : [...value, pos])}
           >
             {pos}
@@ -131,4 +136,35 @@ function PositionChips({ value, onChange }: { value: string[]; onChange: (v: str
 function parseNumber(text: string): number | null {
   const n = Number(text.trim());
   return text.trim() && Number.isInteger(n) && n >= 1 && n <= 99 ? n : null;
+}
+
+export function PositionHelp() {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const headingId = useId();
+
+  return (
+    <div className="position-help">
+      <button
+        type="button"
+        className="btn btn--ghost"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen(!open)}
+      >
+        Positioner
+      </button>
+      <section id={panelId} className="position-help__panel" aria-labelledby={headingId} hidden={!open}>
+        <h2 id={headingId}>Positioner</h2>
+        <dl className="position-help__list">
+          {Object.entries(POSITION_INFO).map(([code, info]) => (
+            <div key={code}>
+              <dt>{code} – {info.name}</dt>
+              <dd>{info.description}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    </div>
+  );
 }
