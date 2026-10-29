@@ -31,6 +31,8 @@ export interface ArrowDrawing {
   type: ArrowType;
   from: Point;
   to: Point;
+  entityId?: string;
+  targetId?: string;
 }
 
 export interface ZoneDrawing {

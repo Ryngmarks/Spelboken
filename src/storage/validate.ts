@@ -1,5 +1,6 @@
 import { PHASES, PITCH_GUIDES, type Drawing, type Entity, type Frame, type PlayerEntity, type Point, type Scenario } from '../domain/types';
 import type { Person } from '../domain/roster';
+import { reconcileLinks } from '../domain/movement';
 
 /** Narrow runtime checks for data from localStorage or imported files. Returns null when invalid. */
 
@@ -41,7 +42,11 @@ function drawing(v: unknown): Drawing | null {
     const from = point(v.from);
     const to = point(v.to);
     if (!from || !to) return null;
-    return { id: v.id, type: v.type, from, to };
+    return {
+      id: v.id, type: v.type, from, to,
+      ...(isStr(v.entityId) && v.entityId.length > 0 && v.entityId.length <= 200 ? { entityId: v.entityId } : {}),
+      ...(v.type === 'pass' && isStr(v.targetId) && v.targetId.length > 0 && v.targetId.length <= 200 ? { targetId: v.targetId } : {}),
+    };
   }
   return null;
 }
@@ -68,7 +73,7 @@ export function parseScenario(v: unknown): Scenario | null {
   const frames = v.frames.map(frame);
   if (entities.some((e) => e === null) || frames.some((f) => f === null)) return null;
   const now = new Date().toISOString();
-  return {
+  return reconcileLinks({
     id: v.id,
     schemaVersion: 1,
     title: v.title,
@@ -81,7 +86,7 @@ export function parseScenario(v: unknown): Scenario | null {
     frames: frames as Frame[],
     createdAt: isStr(v.createdAt) ? v.createdAt : now,
     updatedAt: isStr(v.updatedAt) ? v.updatedAt : now,
-  };
+  });
 }
 
 export function parsePerson(v: unknown): Person | null {
