@@ -150,6 +150,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return commit(state, insertFrameAfter(scenario, frameIndex), {
         frameIndex: frameIndex + 1,
         selection: null,
+        tool: 'select',
       });
     case 'removeFrame': {
       const next = removeFrame(scenario, frameIndex);
