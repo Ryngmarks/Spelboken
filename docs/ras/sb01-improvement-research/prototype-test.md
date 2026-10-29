@@ -21,7 +21,7 @@ Efter att prototypen publicerats på sidan (PM pushar till `main`, ca 1–2 minu
 
 Öppna dem i mobilens webbläsare. De är inte länkade från appen, och **ingenting sparas** – varken i webbläsaren eller på någon
 server. Läser du om sidan eller stänger den är loggen borta, så kopiera loggen (avsnitt 5) innan du stänger.
-Testa stående först; liggande går också (kontrollerna hamnar då i en kolumn till höger).
+**Håll mobilen liggande** – planen blir då mycket större (kontrollerna hamnar i en kolumn till höger). Stående fungerar men planen blir liten; notera om tränaren vänder mobilen själv.
 
 Det vanliga appen öppnas som vanligt på `https://ryngmarks.github.io/Spelboken/` (utan `?proto=`).
 
